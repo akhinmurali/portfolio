@@ -8,7 +8,7 @@ const logStream = document.getElementById('logStream');
 const userInputField = document.getElementById('userInputField');
 const submitLogBtn = document.getElementById('submitLogBtn');
 
-const BACKEND_URL = 'http://localhost:5000/api';
+const BACKEND_URL = 'https://portfolio-196a.onrender.com';
 
 // Persistent State
 let currentSessionId = null; 
