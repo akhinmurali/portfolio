@@ -1,0 +1,12 @@
+{
+  "sarah": {
+    "insideJokeQuestion": "Ask if she remembers that absolute nightmare of a retail dashboard we built at Allianz that kept crashing.",
+    "keywords": ["allianz", "retail", "dashboard", "power bi", "crashing", "powerbi"],
+    "memoryPayload": "Sarah is Akhin's awesome former colleague from Allianz Services. Playfully welcome her back, tell her how much Akhin missed collaborating with her, and joke about the good old corporate days."
+  },
+  "john": {
+    "insideJokeQuestion": "Ask him if he's the same John from Google who loves automated scripts, or just some random guy trying to hack the terminal.",
+    "keywords": ["google", "recruiter", "automation", "scripts", "scripting"],
+    "memoryPayload": "John is a senior technical recruiter at Google who loves automation. Remind him politely and smoothly that Akhin is totally open to relocation opportunities."
+  }
+}
