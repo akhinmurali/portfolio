@@ -9,58 +9,84 @@
 </head>
 <body>
 
-    <!-- Minimal Header Navigation -->
+    <!-- Clean Minimalist Header -->
     <nav class="matrix-nav">
         <div class="nav-wrapper">
             <div class="brand">AKHIN MURALI</div>
-            <ul class="menu-items">
-                <li><a href="#profile">Profile</a></li>
-                <li><a href="#experience">Experience</a></li>
-                <li><a href="#automation">AI Frameworks</a></li>
-                <li><a href="#interests">Interests</a></li>
-            </ul>
+            <div class="nav-tagline">Automation & Project Management</div>
         </div>
     </nav>
 
-    <!-- System Console Main Content Area -->
+    <!-- Main Workspace Content Container -->
     <main class="workspace-wrapper">
 
-        <!-- Hero Display Block -->
-        <header class="console-hero">
-            <div class="subtitle-indicator">// Systems Automation & PMO Strategy</div>
-            <h1 class="cursor-blink-header">AKHIN MURALI</h1>
-            <p class="hero-summary">I specialize in engineering enterprise AI agent frameworks and automating core project metrics. Combining a rigorous governance history with secure, functional execution.</p>
-            <div class="hero-links">
-                <a href="#automation" class="action-link primary-action">Execute Sandboxes</a>
-                <a href="#experience" class="action-link secondary-action">View Experience Logs</a>
-            </div>
+        <!-- 01 / Welcome Hero Section -->
+        <header id="welcome" class="console-hero">
+            <div class="subtitle-indicator">01 / ABOUT ME</div>
+            <h1>Akhin Murali</h1>
+            <p class="hero-summary">I help teams build smoother workflows by combining traditional project management with simple automation tools. I focus on finding repetitive, time-consuming tasks—like manual data entry or hunting through dense documents—and building smart scripts to handle them instead.</p>
         </header>
 
-        <!-- Executive Profiling Section -->
-        <section id="profile" class="data-block">
-            <div class="content-container container-left">
-                <div class="stark-panel">
-                    <div class="panel-tag">[Executive Core]</div>
-                    <h2>Bridging Enterprise Standards with Intelligence</h2>
-                    <p>I balance classic project management fundamentals—including structured milestone tracking, risk evaluation grids, and cross-functional transparency reports—with core technical configurations in generative AI. By constructing custom knowledge engines within secure organizational bounds, I remove repetitive reporting friction and systematically speed up team delivery cycles.</p>
-                    
-                    <div class="system-pills">
-                        <span class="pill">Agentic Architecture</span>
-                        <span class="pill">Power Automate</span>
-                        <span class="pill">Power BI & DAX</span>
-                        <span class="pill">Data Sanity Auditing</span>
+        <!-- 🛠️ CRITICAL MOVE: STICKY NAVIGATION CONTROLLER -->
+        <!-- Placed out of header so it follows the user down the entire document body -->
+        <div class="control-deck-container">
+            <p class="deck-label">Quick Navigation Dashboard:</p>
+            <div class="deck-actions">
+                <button class="node-trigger-btn" id="btn-projects">
+                    <span class="btn-status-dot"></span> ✨ Projects
+                </button>
+                <button class="node-trigger-btn" id="btn-experience">
+                    <span class="btn-status-dot"></span> 💼 Experience
+                </button>
+            </div>
+        </div>
+
+        <!-- 02 / Projects Section -->
+        <section id="automation" class="data-block">
+            <div class="content-container">
+                <div class="section-header-meta">02 / WHAT I'VE BUILT</div>
+                <h2>Featured Projects</h2>
+                <p class="section-intro">A breakdown of the digital tools I built, how they work, and their practical real-world applications.</p>
+
+                <div class="matrix-layout">
+                    <!-- Project 1 -->
+                    <div class="matrix-node">
+                        <div class="node-index">PROJECT 01</div>
+                        <h3>The Smart Digital Front Desk</h3>
+                        <p class="tech-tag">JavaScript / Node.js / Express / REST APIs</p>
+                        <p>Standard AI chatbots frustrate users the second a question gets too complex. I built this widget with a Live Takeover Engine. The AI handles basic FAQs automatically, but if a visitor needs real human help, the system alerts me on my backend dashboard, allowing me to step in and take over the chat live in real-time without refreshing the page.</p>
+                        <div class="use-case"><strong>Real-World Value:</strong> Great for customer support desks, medical reception sites, and small business contact pages.</div>
+                    </div>
+
+                    <!-- Project 2 -->
+                    <div class="matrix-node">
+                        <div class="node-index">PROJECT 02</div>
+                        <h3>Gemini AI Resource Planner</h3>
+                        <p class="tech-tag">Google Gemini / Python / Interactive Notebooks</p>
+                        <p>Managing project resources—like figuring out tracking hours and staying on budget—involves sorting through massive amounts of data. This interactive workspace allows a manager to type a plain English sentence (e.g., "We are short on hours for Phase 2, how should we reassign the team?"). The Gemini AI reviews team availability, balances the calendar, and suggests an optimized plan in seconds.</p>
+                        <div class="use-case"><strong>Real-World Value:</strong> Built for operations managers, development teams, and agency coordinators.</div>
+                    </div>
+
+                    <!-- Project 3 -->
+                    <div class="matrix-node">
+                        <div class="node-index">PROJECT 03</div>
+                        <h3>Project Resource AI Tool Suite</h3>
+                        <p class="tech-tag">JavaScript / Text Parsers / Data Cleaning Scripts</p>
+                        <p>A collective set of three lightweight automation utilities built to clean up daily office errors: an Instant Document Searcher to scan large corporate PDFs, an Automatic Report Maker to parse messy incoming team updates, and a Data Mistake Catcher to scan tracking sheets for typos before client presentation.</p>
+                        <div class="use-case"><strong>Real-World Value:</strong> Speeds up corporate PMO structures, logistics tracking, and daily administrative workflows.</div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Timeline Log Section -->
-        <section id="experience" class="data-block grid-divider">
+        <!-- 03 / Work History Section -->
+        <section id="experience" class="data-block">
             <div class="content-container">
-                <div class="section-header-meta">[System History Records]</div>
-                <h2>Professional Timeline</h2>
+                <div class="section-header-meta">03 / PROFESSIONAL EXPERIENCE</div>
+                <h2>Work History</h2>
                 
                 <div class="clean-log-tree">
+                    <!-- Allianz India -->
                     <div class="log-row">
                         <div class="time-meta-col">
                             <span class="year-stamp">2023 - Present</span>
@@ -69,36 +95,40 @@
                         <div class="body-content-col">
                             <h3>PMO Analyst</h3>
                             <ul class="bullet-manifest">
-                                <li>Deployed an internal enterprise LLM knowledge assistant to immediately process data requests and look up operational guidelines.</li>
-                                <li>Engineered an automated script configuration pipeline to convert unstructured activity files directly into clean dashboard data points.</li>
-                                <li>Designed anomaly checking scripts to automatically scan formatting boundaries across data sheets prior to final metric aggregation.</li>
-                                <li>Configured end-to-end automated routines for time tracking logs, validation grids, and structural tracking via ServiceNow modules.</li>
+                                <li>Assisted with day-to-day project tracking, milestone updates, and maintaining data logs within tracking modules like ServiceNow.</li>
+                                <li>Configured internal tool settings and wrote automated data-cleaning scripts to speed up weekly reporting cycles for the team.</li>
+                                <li>Helped set up internal knowledge assistant tools to make it easier for team members to look up operational guidelines quickly.</li>
                             </ul>
                         </div>
                     </div>
 
+                    <!-- Allianz Australia -->
                     <div class="log-row">
                         <div class="time-meta-col">
                             <span class="year-stamp">2022 - 2023</span>
                             <span class="institution">Allianz Australia</span>
                         </div>
                         <div class="body-content-col">
-                            <h3>Senior Customer Service Consultant</h3>
+                            <h3>Sales & Service Consultant (Motor Insurance)</h3>
                             <ul class="bullet-manifest">
-                                <li>Managed high-volume data corrections and insurance ledger adjustment tasks with extreme structural accuracy.</li>
+                                <li>Handled inbound customer calls, collected vehicle and personal details, and provided accurate insurance quotes for new policies.</li>
+                                <li>Assisted existing policyholders with their accounts, managing service requests, policy adjustments, and general inquiries.</li>
                             </ul>
                         </div>
                     </div>
 
+                    <!-- Good Methods Global -->
                     <div class="log-row">
                         <div class="time-meta-col">
                             <span class="year-stamp">2020 - 2022</span>
                             <span class="institution">Good Methods Global</span>
                         </div>
                         <div class="body-content-col">
-                            <h3>Claims Specialist</h3>
+                            <h3>Claims Analyst (US Dental Industry)</h3>
                             <ul class="bullet-manifest">
-                                <li>Ran background data validation cycles and processing checkpoints for US healthcare financial framework platforms.</li>
+                                <li>Managed insurance verification tasks by comparing and analyzing patient details against insurance provider data.</li>
+                                <li>Assisted dental healthcare providers in the United States with preparing patient treatment plans.</li>
+                                <li>Managed account records, tracked client payments, and organized balance details across billing portals.</li>
                             </ul>
                         </div>
                     </div>
@@ -106,123 +136,70 @@
             </div>
         </section>
 
-        <!-- Functional AI Sandboxes -->
-        <section id="automation" class="data-block">
+        <!-- 04 / Capabilities Section -->
+        <section id="capabilities" class="data-block">
             <div class="content-container">
-                <div class="section-header-meta">[Active Engineering Nodes]</div>
-                <h2>Deployed AI Agent Frameworks</h2>
-                <p class="section-intro">Interact with functional code-logic mockups demonstrating core features built for secure enterprise networks.</p>
-
-                <div class="matrix-layout">
-                    <div class="matrix-node">
-                        <div class="node-index">REF_01</div>
-                        <h3>RAG Process Manual Agent</h3>
-                        <p>Injects complex corporate documentation frameworks and isolates precise procedural answers instantaneously.</p>
-                        <button class="node-trigger-btn" onclick="triggerConsoleAlert('RAG System Node')">Initialize Framework Session</button>
-                    </div>
-                    <div class="matrix-node">
-                        <div class="node-index">REF_02</div>
-                        <h3>Automated KPI Generator</h3>
-                        <p>Transforms raw transactional records into structured arrays and builds automated summary blocks for executives.</p>
-                        <button class="node-trigger-btn" onclick="triggerConsoleAlert('KPI Extraction Tool')">Initialize Framework Session</button>
-                    </div>
-                    <div class="matrix-node">
-                        <div class="node-index">REF_03</div>
-                        <h3>Data Sanity Validator</h3>
-                        <p>Checks tracking matrix input text files using custom rules to shield data layers from logging errors.</p>
-                        <button class="node-trigger-btn" onclick="triggerConsoleAlert('Sanity Checker Layer')">Initialize Framework Session</button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Interests Section -->
-        <section id="interests" class="data-block grid-divider">
-            <div class="content-container container-right">
-                <div class="stark-panel">
-                    <div class="panel-tag">[Off-Duty Processing Matrices]</div>
-                    <h2>Tactical Spatial Mechanics</h2>
-                    <p>When engineering routines are fully deployed, I isolate and track spatial mechanics inside fast-moving physical environments:</p>
-                    
-                    <div class="interests-list-stark">
-                        <div class="stark-interest-row">
-                            <span class="row-marker">></span>
-                            <div><strong>Football:</strong> Mapping rapid team movements, pitch real-estate allocation, and passing transitions.</div>
-                        </div>
-                        <div class="stark-interest-row">
-                            <span class="row-marker">></span>
-                            <div><strong>Cricket:</strong> Contextual adjustments, field layout settings, and tactical delivery variations.</div>
-                        </div>
-                        <div class="stark-interest-row">
-                            <span class="row-marker">></span>
-                            <div><strong>Badminton:</strong> Speed tracking loops, reflex reactions, and baseline placement controls.</div>
-                        </div>
-                    </div>
+                <div class="section-header-meta">04 / EXPERTISE INDEX</div>
+                <h2>Core Capabilities</h2>
+                <div class="system-pills">
+                    <span class="pill">Interactive Chatbots</span>
+                    <span class="pill">Live-Sync Pipelines</span>
+                    <span class="pill">Automated Text Parsers</span>
+                    <span class="pill">Data Sanity Checks</span>
+                    <span class="pill">Power BI & DAX</span>
+                    <span class="pill">Node.js & Express</span>
+                    <span class="pill">Python Fundamentals</span>
                 </div>
             </div>
         </section>
     </main>
 
-    <!-- Embedded System Interface Copilot Widget -->
-    <!-- Embedded System Interface Copilot Widget -->
-<div class="system-copilot-interface" id="copilotNode">
-    <div class="interface-header" id="copilotHeader">
-        <!-- Clean, Perfectly Centered Orbiting Text Layer -->
-        <div class="rotating-text-wrapper">
-            <!-- Canvas centered at (100, 100) with three repeating text segments to fill the loop -->
-            <svg viewBox="0 0 200 200" width="100%" height="100%">
-                <path id="textCircle" d="M 100, 100 m -75, 0 a 75,75 0 1,1 150,0 a 75,75 0 1,1 -150,0" fill="none" />
-                <text font-size="14.5" font-weight="bold" fill="#ffffff" letter-spacing="2.5">
-                    <textPath href="#textCircle" startOffset="0%">
-                        QUICK CHAT • QUICK CHAT • QUICK CHAT • 
-                    </textPath>
-                </text>
-            </svg>
-        </div>
-        <!-- Central Dynamic Core Bubble -->
-        <div class="chat-icon-core">
-            <i class="fa-solid fa-comments" id="toggleIcon"></i>
-            <div class="online-indicator"></div>
-        </div>
-    </div>
-    
-    <!-- Expanded Chat Frame Wrapper -->
-    <div class="interface-body">
-        <div class="output-log-stream" id="logStream">
-            <div class="incoming-bubble">Console initialized. Formulate queries below regarding Akhin Murali's automation stack, data engineering systems, or career achievements.</div>
-        </div>
-        <div class="input-log-row">
-            <span class="input-lead">&gt;</span>
-            <input type="text" id="userInputField" placeholder="" autocomplete="off">
-            <button id="submitLogBtn"><i class="fa-solid fa-arrow-right"></i></button>
-        </div>
-    </div>
-</div>
-    <script src="app.js"></script>
-
-    <script>
-        // Dynamic Scroll Reveal
-        document.addEventListener("DOMContentLoaded", () => {
-            const dataBlocks = document.querySelectorAll('.data-block, .log-row, .matrix-node');
+    <!-- Independent Chatbot Widget Frame -->
+    <div class="system-copilot-interface" id="copilotNode">
+        
+        <!-- 🔥 ENHANCED: HIGH-ATTENTION INTRUSIVE TEASER HOOK -->
+        <div class="chat-teaser-hook" id="chatTeaser">
+            <!-- Multiplying Shockwave Beacon Rings -->
+            <div class="beacon-wrapper">
+                <div class="beacon-ring ring-1"></div>
+                <div class="beacon-ring ring-2"></div>
+                <div class="avatar-bounce">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+            </div>
             
-            const revealObserver = new IntersectionObserver((entries, observer) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('active');
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, { root: null, threshold: 0.1, rootMargin: "0px 0px -40px 0px" });
+            <div class="teaser-bubble critical-alert">
+                <div class="intrusive-flash-header">⚠️ INCOMING TRANSMISSION</div>
+                <span id="teaserText">Establishing subroutines...</span>
+                <div class="bubble-arrow"></div>
+            </div>
+        </div>
 
-            dataBlocks.forEach(block => {
-                block.classList.add('reveal-on-scroll');
-                revealObserver.observe(block);
-            });
-        });
+        <div class="interface-header" id="chatHeader">
+            <div class="chat-icon-core">
+                <i class="fa-solid fa-message" id="toggleIcon"></i>
+                <div class="online-indicator"></div>
+            </div>
+            <span class="header-title-text">Chat With My AI Assistant</span>
+        </div>
+        
+        <div class="interface-body">
+            <div class="output-log-stream" id="logStream">
+                <div class="incoming-bubble">
+                    🤖 <strong>System Online... barely.</strong><br><br>
+                    I am Akhin's independent AI assistant. Heads up: this app runs on a free-tier server. If you send a message and nothing happens right away, the backend is currently waking up from a zero-dollar slumber. 
+                    <br><br>
+                    It takes about <strong>30 seconds</strong> to stretch and grab its coffee. Don't close the tab—it's coming, I promise!
+                </div>
+            </div>
+            <div class="input-log-row">
+                <span class="input-lead">&gt;</span>
+                <input type="text" id="userInputField" placeholder="Ask a question..." autocomplete="off">
+                <button id="submitLogBtn"><i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+        </div>
+    </div>
 
-        function triggerConsoleAlert(segment) {
-            alert(`[Console Protocol] Allocating sandboxed runtime...\nLaunching execution simulation file for: ${segment}\nChannel live.`);
-        }
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>
