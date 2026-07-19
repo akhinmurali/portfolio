@@ -67,7 +67,10 @@
     </div>
 
     <script>
+        // ⚠️ ACTION REQUIRED: Update this URL to match your current live Render Web Service URL.
+        // Ensure there is NO trailing slash at the end of the URL string.
         const BACKEND_URL = 'https://portfolio-196a.onrender.com';
+        
         let selectedSessionId = null;
         let isCurrentSessionHumanActive = false;
         let pollingIntervals = [];
@@ -89,7 +92,8 @@
             const errorDiv = document.getElementById('loginError');
 
             try {
-                const response = await fetch(`${BACKEND_URL}/admin/login`, {
+                // FIXED: Added missing '/api' prefix to match backend configuration route
+                const response = await fetch(`${BACKEND_URL}/api/admin/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: user, password: pass })
@@ -131,7 +135,8 @@
         // ==========================================================================
         async function loadDashboardSessions() {
             try {
-                const response = await fetch(`${BACKEND_URL}/admin/sessions`, { headers: getAuthHeaders() });
+                // FIXED: Added missing '/api' prefix to match backend configuration route
+                const response = await fetch(`${BACKEND_URL}/api/admin/sessions`, { headers: getAuthHeaders() });
                 if (response.status === 401 || response.status === 403) return terminateSession();
                 if (!response.ok) return;
                 
@@ -185,7 +190,8 @@
         async function loadMessages(id) {
             if (!id || selectedSessionId !== id) return;
             try {
-                const response = await fetch(`${BACKEND_URL}/admin/messages/${id}`, { headers: getAuthHeaders() });
+                // FIXED: Added missing '/api' prefix to match backend configuration route
+                const response = await fetch(`${BACKEND_URL}/api/admin/messages/${id}`, { headers: getAuthHeaders() });
                 if (!response.ok) return;
                 const messages = await response.json();
                 const stream = document.getElementById('adminLogStream');
@@ -221,7 +227,8 @@
         async function executeTakeover(targetState) {
             if (!selectedSessionId) return;
             try {
-                const response = await fetch(`${BACKEND_URL}/admin/takeover`, {
+                // FIXED: Added missing '/api' prefix to match backend configuration route
+                const response = await fetch(`${BACKEND_URL}/api/admin/takeover`, {
                     method: 'POST',
                     headers: getAuthHeaders(),
                     body: JSON.stringify({ sessionId: selectedSessionId, isHumanActive: targetState })
@@ -241,7 +248,8 @@
             if (!txt || !selectedSessionId) return;
 
             try {
-                await fetch(`${BACKEND_URL}/admin/message`, {
+                // FIXED: Added missing '/api' prefix to match backend configuration route
+                await fetch(`${BACKEND_URL}/api/admin/message`, {
                     method: 'POST',
                     headers: getAuthHeaders(),
                     body: JSON.stringify({ message: txt, sessionId: selectedSessionId })
