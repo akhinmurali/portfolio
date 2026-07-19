@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Console Control Center | Admin</title>
+    <!-- ⚡ SUPABASE WEBSOCKET CLIENT CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { padding: 40px; background: #000; color: #fff; font-family: monospace; }
+        .dashboard-grid { display: grid; grid-template-columns: 300px 1fr; gap: 40px; margin-top: 20px; }
+        .session-card { border: 1px solid #222; padding: 15px; cursor: pointer; margin-bottom: 10px; background: #0a0a0a; transition: all 0.2s; }
+        .session-card:hover { border-color: #555; }
+        .session-card.active { border-color: #fff; background: #111; }
+        .chat-view { border: 1px solid #222; height: 500px; display: flex; flex-direction: column; background: #0a0a0a; }
+        .chat-body { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .admin-controls { padding: 20px; border-top: 1px solid #222; display: flex; gap: 10px; }
+        .admin-controls input { flex: 1; background: transparent; border: 1px solid #222; color: #fff; padding: 10px; font-family: inherit; }
+        .btn { background: #fff; color: #000; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; }
+        .btn-alert { background: #ff0055; color: #fff; }
+        .btn-release { background: #555; color: #fff; }
+
+        /* Auth Screen Styles */
+        #authOverlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
+        .login-box { border: 1px solid #222; padding: 30px; background: #0a0a0a; display: flex; flex-direction: column; gap: 15px; width: 320px; }
+        .login-box input { background: transparent; border: 1px solid #222; color: #fff; padding: 10px; font-family: inherit; }
+        #loginError { color: #ff0055; font-size: 13px; min-height: 15px; }
+    </style>
+</head>
+<body>
+
+    <!-- GATEWAY AUTH SCREEN -->
+    <div id="authOverlay">
+        <div class="login-box">
+            <h3 style="margin-top:0;">// ACCESS RESTRICTED</h3>
+            <input type="text" id="usernameInput" placeholder="System ID">
+            <input type="password" id="passwordInput" placeholder="Security Token Passphrase">
+            <div id="loginError"></div>
+            <button class="btn" onclick="attemptLogin()">AUTHENTICATE</button>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD CONTENT -->
+    <div id="dashboardContent" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1>// COPIOT ENGINE MASTER OPERATIONS CONTROL</h1>
+            <button class="btn btn-release" onclick="terminateSession()">LOGOUT</button>
+        </div>
+        <hr style="border-color: #1a1a1a;">
+
+        <div class="dashboard-grid">
+            <div>
+                <h3>[Live Active Targets]</h3>
+                <div id="queueTarget">Loading system queues...</div>
+            </div>
+
+            <div class="chat-view">
+                <div style="padding: 15px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center;">
+                    <span id="activeChatTitle">Select an active session data thread</span>
+                    <button class="btn btn-alert" id="takeoverBtn" style="display:none;" onclick="executeTakeover(true)"> FORCE MANUAL INTERCEPT</button>
+                    <button class="btn btn-release" id="releaseBtn" style="display:none;" onclick="executeTakeover(false)"> RELEASE TO AI</button>
+                </div>
+                <div class="chat-body" id="adminLogStream"></div>
+                <div class="admin-controls">
+                    <input type="text" id="adminInput" placeholder="Inject live terminal transmission..." disabled>
+                    <button class="btn" id="adminSendBtn" onclick="sendAdminMessage()" disabled>Transmit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ⚠️ ACTION REQUIRED: Update this URL to match your current live Render Web Service URL.
+        const BACKEND_URL = 'https://portfolio-196a.onrender.com';
+        
+        // Dynamic credentials populated on gateway authorization
+        let SUPABASE_URL = "";
+        let SUPABASE_ANON_KEY = "";
+        
+        let selectedSessionId = null;
+        let isCurrentSessionHumanActive = false;
+        let pollingIntervals = [];
+        let supabaseClient = null;
+        let currentRealtimeChannel = null;
+
+        function getAuthHeaders() {
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${sessionStorage.getItem('adminToken')}`
+            };
+        }
+
+        // ==========================================================================
+        // SYSTEM GATEWAY LOGIN ROUTINES
+        // ==========================================================================
+        async function attemptLogin() {
+            const user = document.getElementById('usernameInput').value;
+            const pass = document.getElementById('passwordInput').value;
+            const errorDiv = document.getElementById('loginError');
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/admin/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.token) {
+                    sessionStorage.setItem('adminToken', data.token);
+                    await initializeDashboardInterface();
+                } else {
+                    errorDiv.textContent = data.error || "Authentication failed.";
+                }
+            } catch (err) {
+                errorDiv.textContent = "Cannot connect to core engine server.";
+            }
+        }
+
+        async function initializeDashboardInterface() {
+            document.getElementById('authOverlay').style.display = 'none';
+            document.getElementById('dashboardContent').style.display = 'block';
+
+            // ⚡ FETCH CONFIG: Dynamically fetch public token mappings from the Render server
+            try {
+                const configResponse = await fetch(`${BACKEND_URL}/api/config`);
+                const config = await configResponse.json();
+                
+                SUPABASE_URL = config.supabaseUrl;
+                SUPABASE_ANON_KEY = config.supabaseAnonKey;
+                
+                // Initialize Supabase WebSocket connection instance
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            } catch (err) {
+                console.error("❌ Failed to resolve dynamic database variables:", err);
+            }
+
+            loadDashboardSessions();
+            
+            // Poll for the sidebar targets list slowly (every 12 seconds) to protect server resources
+            pollingIntervals.push(setInterval(loadDashboardSessions, 12000));
+        }
+
+        function terminateSession() {
+            if (currentRealtimeChannel) currentRealtimeChannel.unsubscribe();
+            sessionStorage.removeItem('adminToken');
+            pollingIntervals.forEach(clearInterval);
+            pollingIntervals = [];
+            window.location.reload();
+        }
+
+        // ==========================================================================
+        // CORE DASHBOARD WORKFLOWS & REALTIME SYNC HANDLERS
+        // ==========================================================================
+        async function loadDashboardSessions() {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/admin/sessions`, { headers: getAuthHeaders() });
+                if (response.status === 401 || response.status === 403) return terminateSession();
+                if (!response.ok) return;
+                
+                const sessions = await response.json();
+                const queueTarget = document.getElementById('queueTarget');
+                const now = new Date().getTime();
+
+                const activeSessions = sessions.filter(session => {
+                    const lastActiveTime = new Date(session.updated_at).getTime();
+                    return session.is_human_agent || (now - lastActiveTime) < 300000;
+                });
+
+                queueTarget.innerHTML = '';
+                if (activeSessions.length === 0) {
+                    queueTarget.innerHTML = '<p style="color:#555;">No live user terminals detected.</p>';
+                    return;
+                }
+
+                activeSessions.forEach(session => {
+                    const card = document.createElement('div');
+                    card.className = `session-card ${selectedSessionId === session.id ? 'active' : ''}`;
+                    card.onclick = () => selectSession(session.id, session.visitor_name, session.is_human_agent);
+                    card.innerHTML = `<strong>${session.visitor_name}</strong><br><span style="font-size:11px; color:#666;">${session.is_human_agent ? ' OVERRIDE ACTIVE' : ' MANAGED BY AI'}</span>`;
+                    queueTarget.appendChild(card);
+
+                    if (selectedSessionId === session.id) {
+                        isCurrentSessionHumanActive = session.is_human_agent;
+                        updateControlInterfaceState(session.is_human_agent);
+                    }
+                });
+            } catch (err) { console.error(err); }
+        }
+
+        function selectSession(id, name, isHuman) {
+            selectedSessionId = id;
+            isCurrentSessionHumanActive = isHuman;
+            document.getElementById('activeChatTitle').textContent = `Session: ${name}`;
+            updateControlInterfaceState(isHuman);
+            
+            // 1. Run a single fetch request to pull past historical text logs
+            initialHistoryDownload(id);
+            
+            // 2. Open a persistent Realtime WebSocket connection straight to the table
+            mountSessionRealtimeStream(id);
+        }
+
+        async function initialHistoryDownload(id) {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/admin/messages/${id}`, { headers: getAuthHeaders() });
+                if (!response.ok) return;
+                const messages = await response.json();
+                
+                const stream = document.getElementById('adminLogStream');
+                stream.innerHTML = '';
+                if (messages) {
+                    messages.forEach(appendSingleRealtimeMessage);
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        // ⚡ WEB SOCKET LISTENER MOUNT
+        function mountSessionRealtimeStream(id) {
+            if (currentRealtimeChannel) {
+                currentRealtimeChannel.unsubscribe();
+            }
+
+            if (!supabaseClient) return;
+
+            currentRealtimeChannel = supabaseClient
+                .channel(`room:${id}`)
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, payload => {
+                    const msg = payload.new;
+                    // Inject message instantly onto screen frame only if it matches current viewport
+                    if (msg.session_id === id) {
+                        appendSingleRealtimeMessage(msg);
+                    }
+                })
+                .subscribe();
+        }
+
+        function appendSingleRealtimeMessage(msg) {
+            const stream = document.getElementById('adminLogStream');
+            const bubble = document.createElement('div');
+            bubble.style.padding = '8px 12px';
+            bubble.style.margin = '4px 0';
+            bubble.style.maxWidth = '75%';
+            bubble.style.borderRadius = '2px';
+            
+            if (msg.sender === 'user') {
+                bubble.style.background = '#fff'; bubble.style.color = '#000'; bubble.style.alignSelf = 'flex-end';
+            } else if (msg.sender === 'me') {
+                bubble.style.background = '#ff0055'; bubble.style.color = '#fff'; bubble.style.alignSelf = 'flex-end';
+            } else {
+                bubble.style.border = '1px solid #222'; bubble.style.color = '#fff'; bubble.style.alignSelf = 'flex-start';
+            }
+            
+            const label = msg.sender === 'user' ? 'USER' : (msg.sender === 'me' ? 'YOU (LIVE)' : 'AI');
+            bubble.textContent = `[${label}]: ${msg.message}`;
+            stream.appendChild(bubble);
+            stream.scrollTop = stream.scrollHeight;
+        }
+
+        function updateControlInterfaceState(isHuman) {
+            document.getElementById('takeoverBtn').style.display = isHuman ? 'none' : 'block';
+            document.getElementById('releaseBtn').style.display = isHuman ? 'block' : 'none';
+            document.getElementById('adminInput').disabled = !isHuman;
+            document.getElementById('adminSendBtn').disabled = !isHuman;
+        }
+
+        async function executeTakeover(targetState) {
+            if (!selectedSessionId) return;
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/admin/takeover`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ sessionId: selectedSessionId, isHumanActive: targetState })
+                });
+                if (response.ok) {
+                    isCurrentSessionHumanActive = targetState;
+                    updateControlInterfaceState(targetState);
+                    loadDashboardSessions();
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        async function sendAdminMessage() {
+            const input = document.getElementById('adminInput');
+            const txt = input.value.trim();
+            if (!txt || !selectedSessionId) return;
+
+            try {
+                await fetch(`${BACKEND_URL}/api/admin/message`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ message: txt, sessionId: selectedSessionId })
+                });
+                input.value = '';
+                // Note: We don't need to manually re-load messages here! 
+                // The database INSERT automatically triggers our Supabase listener to draw it instantly.
+            } catch (err) { console.error(err); }
+        }
+
+        // Auto-check on bootup if an administrative token session already exists
+        window.addEventListener('DOMContentLoaded', () => {
+            if (sessionStorage.getItem('adminToken')) {
+                initializeDashboardInterface();
+            }
+        });
+    </script>
+</body>
+</html>
