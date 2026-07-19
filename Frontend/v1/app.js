@@ -3,6 +3,11 @@
  * Production Refactored Layout Switcher, Hook Animator, & Chat Interface Controller
  */
 
+// --- CONFIGURATION MANAGEMENT ---
+// ⚠️ ACTION REQUIRED: Replace this placeholder string with your actual live Render Web Service URL.
+// Ensure there is NO trailing slash at the end of the URL string (e.g., "https://your-service.onrender.com").
+const BACKEND_URL = "https://YOUR-ACTUAL-RENDER-URL.onrender.com";
+
 // --- 1. GLOBAL STATE DEFINITIONS ---
 let conversationHistory = [];
 const MAX_HISTORY_DEPTH = 6; // Deepened slightly to let the LLM evaluate context accurately
@@ -89,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- 4. BACKEND HANDSHAKE & INITIALIZATION SYSTEM ---
 async function initializeBackendSession() {
     try {
-        const response = await fetch('https://portfolio-196a.onrender.com/api/session/create', {
+        const response = await fetch(`${BACKEND_URL}/api/session/create`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ visitorName })
@@ -156,7 +161,7 @@ function closeChatWindow() {
     const toggleIcon = document.getElementById('toggleIcon');
     const teaserNode = document.getElementById('chatTeaser');
     
-    if (copilotNode) CustomEvent = copilotNode.classList.remove('expanded');
+    if (copilotNode) copilotNode.classList.remove('expanded');
     if (toggleIcon) toggleIcon.className = "fa-solid fa-message";
     
     if (teaserNode) {
@@ -250,7 +255,7 @@ async function processUserSubmission() {
         appendMessageBubble('outgoing', rawQuery);
         inputField.value = '';
         try {
-            await fetch('https://portfolio-196a.onrender.com/api/admin/message', {
+            await fetch(`${BACKEND_URL}/api/admin/message`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: rawQuery, sessionId })
@@ -293,7 +298,7 @@ async function processUserSubmission() {
             appendMessageBubble('incoming', "⏰ Server Update: Yup, it's still rubbing its eyes. Render's free tier takes about 30 seconds to fully boot up on the first request. Hang tight, the gears are turning!");
         }, 4500);
 
-        const response = await fetch('https://portfolio-196a.onrender.com', {
+        const response = await fetch(`${BACKEND_URL}/api/chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -395,7 +400,7 @@ function initializeHumanTakeoverMode() {
     liveCheckInterval = setInterval(async () => {
         if (!sessionId) return;
         try {
-            const check = await fetch(`https://portfolio-196a.onrender.com/api/chat/sync?sessionId=${sessionId}`);
+            const check = await fetch(`${BACKEND_URL}/api/chat/sync?sessionId=${sessionId}`);
             const data = await check.json();
             
             if (data.messages && data.messages.length > 0) {
