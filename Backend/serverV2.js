@@ -12,7 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 // Initialize Administrative Supabase Client (Bypasses RLS)
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
 // Initialize Groq AI SDK
 const groq = new Groq({ apiKey: process.env.GROK_API_KEY });
