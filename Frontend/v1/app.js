@@ -1,21 +1,25 @@
 /**
  * Akhin Murali - Portfolio Engine Architecture
- * Production Refactored Layout Switcher, Hook Animator, & Chat Interface Controller
+ * Production Realtime Intercept Chat Interface (Zero-Server-Load Edition)
  */
 
 // --- CONFIGURATION MANAGEMENT ---
 // ⚠️ ACTION REQUIRED: Replace this placeholder string with your actual live Render Web Service URL.
-// Ensure there is NO trailing slash at the end of the URL string (e.g., "https://your-service.onrender.com").
 const BACKEND_URL = "https://portfolio-196a.onrender.com";
+
+// Dynamic credentials populated safely via backend config handshake on startup
+let SUPABASE_URL = "";
+let SUPABASE_ANON_KEY = "";
+let supabaseClient = null;
 
 // --- 1. GLOBAL STATE DEFINITIONS ---
 let conversationHistory = [];
-const MAX_HISTORY_DEPTH = 6; // Deepened slightly to let the LLM evaluate context accurately
+const MAX_HISTORY_DEPTH = 6;
 let isWaitingForResponse = false;
 let isLiveHumanOverride = false;
-let liveCheckInterval = null;
-let sessionId = null;          // Tracks database session identity
-let visitorName = "Guest";     // Extracted or explicitly given guest identity
+let sessionId = null;          
+let visitorName = "Guest";     
+let renderedMessageIds = new Set(); // Prevents duplication glitches across streams
 
 // Teaser Engine States
 let teaserInterval = null;
@@ -27,7 +31,7 @@ const TEASER_PHRASES = [
     "📂 Type 'resume' to see if I can break Akhin's firewall."
 ];
 
-// --- 2. LOCAL FAQ INTERCEPTOR MATRIX (Quota & Server-Off Protection) ---
+// --- 2. LOCAL FAQ INTERCEPTOR MATRIX ---
 const LOCAL_FAQ_REGISTRY = {
     contact: "You can reach Akhin directly via email at your-email@domain.com or connect through his LinkedIn profile linked on this page.",
     email: "Akhin's professional email is your-email@domain.com.",
@@ -50,12 +54,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const experienceSection = document.getElementById('experience');
     const capabilitiesSection = document.getElementById('capabilities');
 
-    // FORCE INITIAL HIDDEN STATE (Ensures clean workspace on load)
     if (automationSection) automationSection.style.display = 'none';
     if (experienceSection) experienceSection.style.display = 'none';
     if (capabilitiesSection) capabilitiesSection.style.display = 'none';
 
-    // UNIVERSAL HEAD-END TOGGLE FOR CHAT WINDOW
     if (chatHeader && copilotNode) {
         chatHeader.style.cursor = 'pointer';
         chatHeader.addEventListener('click', (e) => {
@@ -68,15 +70,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ALWAYS-WORKING INTERACTIVE BUTTON ROUTERS
-    if (btnProjects) {
-        btnProjects.addEventListener('click', () => toggleWorkspaceSection('projects'));
-    }
-    if (btnExperience) {
-        btnExperience.addEventListener('click', () => toggleWorkspaceSection('experience'));
-    }
+    if (btnProjects) btnProjects.addEventListener('click', () => toggleWorkspaceSection('projects'));
+    if (btnExperience) btnExperience.addEventListener('click', () => toggleWorkspaceSection('experience'));
 
-    // Direct Listeners for Chat Submission
     if (userInputField && submitLogBtn) {
         submitLogBtn.addEventListener('click', processUserSubmission);
         userInputField.addEventListener('keypress', (e) => {
@@ -84,16 +80,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // INITIALIZE CURIOSITY TEASER ENGINE
     initializeTeaserEngine();
-
-    // BOOTSTRAP BACKEND HANDSHAKE EARLY (Wakes up Render free tier on page load)
     initializeBackendSession();
 });
 
-// --- 4. BACKEND HANDSHAKE & INITIALIZATION SYSTEM ---
+// --- 4. DYNAMIC CONFIG HANDSHAKE & SUPABASE REALTIME STREAM ---
 async function initializeBackendSession() {
     try {
+        // 1. Fetch safe, public database keys from the Render backend environment mappings
+        const configResponse = await fetch(`${BACKEND_URL}/api/config`);
+        const config = await configResponse.json();
+        
+        SUPABASE_URL = config.supabaseUrl;
+        SUPABASE_ANON_KEY = config.supabaseAnonKey;
+        
+        // 2. Instantiate the Supabase WebSocket Client Engine
+        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // 3. Perform standard core session handshake
         const response = await fetch(`${BACKEND_URL}/api/session/create`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -103,10 +107,63 @@ async function initializeBackendSession() {
         if (response.ok) {
             const data = await response.json();
             sessionId = data.sessionId;
-            console.log(`📡 Backend handshake successful. Assigned Session ID: ${sessionId}`);
+            console.log(`📡 Handshake secure. WebSockets online. Session ID: ${sessionId}`);
+            
+            // 4. Mount event streams (replaces old interval sync timers completely)
+            setupRealtimeListeners();
         }
     } catch (err) {
         console.warn("⚠️ Server cold-starting. Transitioning chat connection to autonomous fallback tracking mode.", err);
+    }
+}
+
+function setupRealtimeListeners() {
+    if (!sessionId || !supabaseClient) return;
+
+    // Stream A: Listen for new messages inserted by the Admin Dashboard Panel
+    supabaseClient
+        .channel('public:chat_messages')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, payload => {
+            const msg = payload.new;
+            // Intercept and print message if it belongs to this viewport and came from the admin control ('me')
+            if (msg.session_id === sessionId && msg.sender === 'me') {
+                if (!renderedMessageIds.has(msg.id)) {
+                    renderedMessageIds.add(msg.id);
+                    appendMessageBubble('incoming', `<strong>[Live Akhin]:</strong> ${msg.message}`);
+                }
+            }
+        })
+        .subscribe();
+
+    // Stream B: Listen for live session data switches (Manual Intercept / Release Toggles)
+    supabaseClient
+        .channel('public:chat_sessions')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chat_sessions' }, payload => {
+            const updatedSession = payload.new;
+            if (updatedSession.id === sessionId) {
+                handleTakeoverUIStateChange(updatedSession.is_human_agent);
+            }
+        })
+        .subscribe();
+}
+
+function handleTakeoverUIStateChange(isHumanActive) {
+    const headerTitleNode = document.querySelector('#chatHeader h4');
+    
+    if (isHumanActive && !isLiveHumanOverride) {
+        isLiveHumanOverride = true;
+        appendMessageBubble('incoming', "⚡ <em>[System Alert]: Akhin Murali has joined the terminal interface. AI controls disabled.</em>");
+        if (headerTitleNode) {
+            headerTitleNode.innerHTML = "⚡ [Akhin Connected]";
+            headerTitleNode.style.color = "#ff0055";
+        }
+    } else if (!isHumanActive && isLiveHumanOverride) {
+        isLiveHumanOverride = false;
+        appendMessageBubble('incoming', "🤖 <em>[System Alert]: Akhin has disconnected. AI Copilot system reassigned.</em>");
+        if (headerTitleNode) {
+            headerTitleNode.innerHTML = "🤖 Buddy | AI Portfolio Copilot";
+            headerTitleNode.style.color = "";
+        }
     }
 }
 
@@ -119,7 +176,6 @@ function initializeTeaserEngine() {
     let currentIdx = 0;
     textNode.textContent = TEASER_PHRASES[0];
 
-    // Delayed grand entrance for visual pop
     setTimeout(() => {
         const copilotNode = document.getElementById('copilotNode');
         if (copilotNode && !copilotNode.classList.contains('expanded')) {
@@ -127,7 +183,6 @@ function initializeTeaserEngine() {
         }
     }, 2000);
 
-    // Phrase Rotator Loop (Runs every 5.5 seconds)
     teaserInterval = setInterval(() => {
         teaserNode.classList.remove('teaser-visible');
         
@@ -150,10 +205,7 @@ function openChatWindow() {
     
     if (copilotNode) copilotNode.classList.add('expanded');
     if (toggleIcon) toggleIcon.className = "fa-solid fa-chevron-down";
-    
-    if (teaserNode) {
-        teaserNode.classList.remove('teaser-visible');
-    }
+    if (teaserNode) teaserNode.classList.remove('teaser-visible');
 }
 
 function closeChatWindow() {
@@ -161,7 +213,7 @@ function closeChatWindow() {
     const toggleIcon = document.getElementById('toggleIcon');
     const teaserNode = document.getElementById('chatTeaser');
     
-    if (copilotNode) copilotNode.classList.remove('expanded');
+    if (copilotNode) 0copilotNode.classList.remove('expanded');
     if (toggleIcon) toggleIcon.className = "fa-solid fa-message";
     
     if (teaserNode) {
@@ -189,7 +241,6 @@ function toggleWorkspaceSection(targetType) {
             automationSection.style.display = 'block';
             automationSection.classList.add('section-revealed');
             btnProjects.classList.add('node-active');
-
             experienceSection.style.display = 'none';
             experienceSection.classList.remove('section-revealed');
             if (capabilitiesSection) {
@@ -197,10 +248,7 @@ function toggleWorkspaceSection(targetType) {
                 capabilitiesSection.classList.remove('section-revealed');
             }
             btnExperience.classList.remove('node-active');
-
-            setTimeout(() => {
-                automationSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 60);
+            setTimeout(() => { automationSection.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
         }
     } 
     else if (targetType === 'experience') {
@@ -220,14 +268,10 @@ function toggleWorkspaceSection(targetType) {
                 capabilitiesSection.classList.add('section-revealed');
             }
             btnExperience.classList.add('node-active');
-
             automationSection.style.display = 'none';
             automationSection.classList.remove('section-revealed');
             btnProjects.classList.remove('node-active');
-
-            setTimeout(() => {
-                experienceSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 60);
+            setTimeout(() => { experienceSection.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
         }
     }
 }
@@ -242,35 +286,35 @@ async function processUserSubmission() {
     const rawQuery = inputField.value.trim();
     if (!rawQuery) return;
 
-    // INTENT DETECTION: Extract target name dynamically to trigger identity ciphers
+    // Intent Detection Context Filter
     const clearQuery = rawQuery.toLowerCase();
     if (clearQuery.startsWith("my name is ") || clearQuery.startsWith("i am ")) {
         const structuralWords = rawQuery.split(" ");
         visitorName = structuralWords[structuralWords.length - 1].replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
-        console.log(`🎯 Client visitor tracking state modified to target profile: "${visitorName}"`);
     }
 
-    // If a human takeover is currently active, bypass LLM routes and pipe messages to polling pipeline
-    if (isLiveHumanOverride) {
-        appendMessageBubble('outgoing', rawQuery);
-        inputField.value = '';
-        try {
-            await fetch(`${BACKEND_URL}/api/admin/message`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: rawQuery, sessionId })
-            });
-        } catch (e) {
-            console.error("Direct live submission issue:", e);
-        }
-        return;
-    }
-
+    // Immediately paint submission out onto front-end terminal
     appendMessageBubble('outgoing', rawQuery);
     inputField.value = '';
     setChatLoadingState(true);
 
-    // Speed Intercept Loop to preserve API quotas
+    // If active takeover is verified, hit the shared public path to log the text and exit early
+    if (isLiveHumanOverride) {
+        try {
+            await fetch(`${BACKEND_URL}/api/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: rawQuery, sessionId, visitorName })
+            });
+        } catch (e) {
+            console.error("Manual override transmission failed:", e);
+        } finally {
+            setChatLoadingState(false);
+        }
+        return;
+    }
+
+    // Check FAQ Registry
     const matchedResponse = checkLocalFaqIntercept(rawQuery);
     if (matchedResponse) {
         setTimeout(() => {
@@ -280,20 +324,14 @@ async function processUserSubmission() {
         return;
     }
 
-    // UPDATE STATE SCHEMA: Matches backend 'sender' and 'message' columns perfectly
     conversationHistory.push({ sender: 'user', message: rawQuery });
-    if (conversationHistory.length > MAX_HISTORY_DEPTH) {
-        conversationHistory.shift(); 
-    }
+    if (conversationHistory.length > MAX_HISTORY_DEPTH) conversationHistory.shift(); 
 
     const typingIndicator = createTypingIndicator();
     logStream.appendChild(typingIndicator);
     logStream.scrollTop = logStream.scrollHeight;
 
     try {
-        const controller = new AbortController();
-        
-        // Visual warning alert triggered if free tier takes longer than 4.5 seconds to respond
         const timeoutId = setTimeout(() => {
             appendMessageBubble('incoming', "⏰ Server Update: Yup, it's still rubbing its eyes. Render's free tier takes about 30 seconds to fully boot up on the first request. Hang tight, the gears are turning!");
         }, 4500);
@@ -306,8 +344,7 @@ async function processUserSubmission() {
                 sessionId: sessionId,
                 visitorName: visitorName,
                 history: conversationHistory
-            }),
-            signal: controller.signal
+            })
         });
         
         clearTimeout(timeoutId);
@@ -316,41 +353,28 @@ async function processUserSubmission() {
         if (!response.ok) throw new Error(`HTTP Error Status: ${response.status}`);
         
         const data = await response.json();
-        
-        // Catch the session ID if it was initialized dynamically on a backend cold-start
         if (data.sessionId) sessionId = data.sessionId;
 
-        conversationHistory.push({ sender: 'assistant', message: data.reply });
-        appendMessageBubble('incoming', data.reply);
-
+        if (data.reply) {
+            conversationHistory.push({ sender: 'assistant', message: data.reply });
+            appendMessageBubble('incoming', data.reply);
+        }
     } catch (error) {
         if (typingIndicator) typingIndicator.remove();
-        console.warn("Server connection offline. Relying on fallback notice.", error);
-        appendMessageBubble('incoming', "⚠️ Server Offline: Since the backend isn't running right now, I can't look up custom queries. Try asking about my <strong>projects</strong>, <strong>stack</strong>, or <strong>experience</strong> to test my client-side offline memory!");
+        appendMessageBubble('incoming', "⚠️ Server Offline: Since the backend isn't running right now, I can't look up custom queries. Try asking about my <strong>projects</strong>, <strong>stack</strong>, or <strong>experience</strong>!");
     } finally {
         setChatLoadingState(false);
     }
 }
 
-// --- 7. UTILITY METHODS & LIVE TRANSCRIPT SYNC PIPELINE ---
+// --- 7. UTILITY METHODS ---
 function checkLocalFaqIntercept(query) {
     const lowerQuery = query.toLowerCase();
-    
-    if (lowerQuery.includes('email') || lowerQuery.includes('contact') || lowerQuery.includes('reach')) {
-        return LOCAL_FAQ_REGISTRY.contact;
-    }
-    if (lowerQuery.includes('stack') || lowerQuery.includes('code') || lowerQuery.includes('languages')) {
-        return LOCAL_FAQ_REGISTRY.stack;
-    }
-    if (lowerQuery.includes('resume') || lowerQuery.includes('experience') || lowerQuery.includes('history')) {
-        return LOCAL_FAQ_REGISTRY.resume;
-    }
-    if (lowerQuery.includes('project') || lowerQuery.includes('build')) {
-        return LOCAL_FAQ_REGISTRY.projects;
-    }
-    if (lowerQuery.includes('allianz') || lowerQuery.includes('good methods')) {
-        return LOCAL_FAQ_REGISTRY.allianz;
-    }
+    if (lowerQuery.includes('email') || lowerQuery.includes('contact') || lowerQuery.includes('reach')) return LOCAL_FAQ_REGISTRY.contact;
+    if (lowerQuery.includes('stack') || lowerQuery.includes('code') || lowerQuery.includes('languages')) return LOCAL_FAQ_REGISTRY.stack;
+    if (lowerQuery.includes('resume') || lowerQuery.includes('experience') || lowerQuery.includes('history')) return LOCAL_FAQ_REGISTRY.resume;
+    if (lowerQuery.includes('project') || lowerQuery.includes('build')) return LOCAL_FAQ_REGISTRY.projects;
+    if (lowerQuery.includes('allianz') || lowerQuery.includes('good methods')) return LOCAL_FAQ_REGISTRY.allianz;
     return null;
 }
 
@@ -385,44 +409,4 @@ function createTypingIndicator() {
     indicator.style.color = '#888';
     indicator.textContent = 'Processing request...';
     return indicator;
-}
-
-// HUMAN INTERVENTION TRACKING SYNC (Polls the unified stateless sync pipeline)
-function initializeHumanTakeoverMode() {
-    if (isLiveHumanOverride) return;
-    isLiveHumanOverride = true;
-
-    appendMessageBubble('incoming', "⚡ Human Intervention Protocol Triggered. System alert dispatched to Akhin's personal control panel. Connecting...");
-    
-    // Store message offset count locally to prevent rendering duplicated chat logs
-    let localRenderedCount = document.getElementById('logStream').children.length;
-
-    liveCheckInterval = setInterval(async () => {
-        if (!sessionId) return;
-        try {
-            const check = await fetch(`${BACKEND_URL}/api/chat/sync?sessionId=${sessionId}`);
-            const data = await check.json();
-            
-            if (data.messages && data.messages.length > 0) {
-                // Filter down explicitly to messages posted by the administrator panel ('me')
-                const adminPayloads = data.messages.filter(m => m.sender === 'me');
-                
-                if (adminPayloads.length > 0 && document.getElementById('logStream').children.length <= localRenderedCount) {
-                    adminPayloads.forEach(msg => {
-                        appendMessageBubble('incoming', `[Live Akhin]: ${msg.message}`);
-                    });
-                    localRenderedCount = document.getElementById('logStream').children.length;
-                }
-            }
-
-            // Close the live loop gracefully if the human operator turns off override mode
-            if (data.humanActive === false && isLiveHumanOverride) {
-                clearInterval(liveCheckInterval);
-                isLiveHumanOverride = false;
-                appendMessageBubble('incoming', "Live connection closed. AI system tracking reassigned to standard copilot routine.");
-            }
-        } catch (e) {
-            console.warn("Sync loop throttling connection check:", e);
-        }
-    }, 5000); // Checked every 5 seconds to match free-tier efficiency limits
 }
