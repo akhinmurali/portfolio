@@ -1,525 +1,723 @@
 /* ==========================================================================
-   1. CORE ARCHITECTURE & DESIGN VARIABLES
+   GLOBAL CORE DESIGN PROPERTIES
    ========================================================================== */
-:root {
-    --core-black: #000000;
-    --pure-white: #ffffff;
-    --dark-surface: #0a0a0a;
-    --muted-gray: #888888;
-    --thin-border: 1px solid #1a1a1a;
-}
 
 * {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
-    font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Courier New', monospace;
-    scroll-behavior: smooth;
 }
 
-html, body {
-    background-color: var(--core-black);
-    color: var(--pure-white);
+body {
+    background-color: #0d1117;
+    color: #c9d1d9;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    line-height: 1.6;
     overflow-x: hidden;
-    position: relative;
-    width: 100%;
-    letter-spacing: -0.2px;
+    padding-top: 70px;
+}
+
+a {
+    color: #00ff66;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    color: #00cc52;
 }
 
 /* ==========================================================================
-   2. SYSTEM BOOT SEQUENCING (INITIALIZATION LOAD ANIMATIONS)
+   CLEAN MINIMALIST NAVIGATION MODULE
    ========================================================================== */
-body * {
-    animation: systemFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
 
-@keyframes systemFadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.workspace-wrapper > *:nth-child(1) { animation-delay: 0.1s; }
-.workspace-wrapper > *:nth-child(2) { animation-delay: 0.2s; }
-.workspace-wrapper > *:nth-child(3) { animation-delay: 0.3s; }
-
-/* ==========================================================================
-   3. NAVIGATION TERMINAL HEADER
-   ========================================================================== */
 .matrix-nav {
     position: fixed;
-    top: 0; left: 0; width: 100%;
-    background: rgba(0, 0, 0, 0.95);
-    border-bottom: var(--thin-border);
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 70px;
+    background: rgba(13, 17, 23, 0.95);
+    border-bottom: 1px solid #21262d;
     z-index: 1000;
+    backdrop-filter: blur(8px);
 }
 
 .nav-wrapper {
-    width: 88%; max-width: 1200px;
-    margin: 0 auto; padding: 22px 0;
-    display: flex; justify-content: space-between; align-items: center;
+    max-width: 1100px;
+    margin: 0 auto;
+    height: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
 }
 
-.brand { font-weight: bold; font-size: 1.1rem; letter-spacing: -0.5px; }
-.menu-items { display: flex; list-style: none; gap: 30px; }
-
-.menu-items a { 
-    color: var(--muted-gray); 
-    text-decoration: none; 
-    font-size: 0.88rem; 
-    position: relative;
-    padding: 4px 0;
-    transition: color 0.25s ease; 
+.brand {
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: 2px;
+    color: #ffffff;
 }
 
-.menu-items a:hover { 
-    color: var(--pure-white); 
-}
-
-.menu-items a::after {
-    content: '';
-    position: absolute;
-    bottom: 0; left: 0;
-    width: 100%; height: 1px;
-    background-color: var(--pure-white);
-    transform: scaleX(0);
-    transform-origin: right;
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.menu-items a:hover::after {
-    transform: scaleX(1);
-    transform-origin: left;
+.nav-tagline {
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: #8b949e;
 }
 
 /* ==========================================================================
-   4. LAYOUT BOUNDARIES & WORKSPACE FRAMEWORKS
+   WORKSPACE MAIN GRID HOUSING
    ========================================================================== */
+
 .workspace-wrapper {
-    width: 88%; max-width: 1200px;
-    margin: 90px auto 0;
-    position: relative; z-index: 2;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 20px 120px 20px;
 }
 
-.data-block { padding: 100px 0; width: 100%; }
-
-.grid-divider {
-    border-top: var(--thin-border);
-    border-bottom: var(--thin-border);
-    background: var(--dark-surface);
+/* 01 / Console Hero Layout */
+.console-hero {
+    padding: 60px 0;
+    border-bottom: 1px solid #21262d;
+    margin-bottom: 20px;
 }
 
-.content-container { width: 100%; }
-.container-left { max-width: 720px; }
-.container-right { max-width: 720px; margin-left: auto; }
-.section-header-meta { color: var(--muted-gray); font-size: 0.85rem; margin-bottom: 12px; }
+.subtitle-indicator {
+    font-family: monospace;
+    color: #00ff66;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+    letter-spacing: 1px;
+}
+
+.console-hero h1 {
+    font-size: 3rem;
+    color: #f0f6fc;
+    font-weight: 800;
+    margin-bottom: 20px;
+    letter-spacing: -1px;
+}
+
+.hero-summary {
+    font-size: 1.2rem;
+    color: #8b949e;
+    max-width: 760px;
+    margin-bottom: 40px;
+}
+
+/* ⚡ UPDATED: STICKY FLOATING CONTROL DECK CONTAINER */
+.control-deck-container {
+    background: rgba(22, 27, 34, 0.85);
+    border: 1px solid #30363d;
+    padding: 20px 24px;
+    border-radius: 12px;
+    max-width: 600px;
+    position: sticky;
+    top: 90px; /* Aligns perfectly right below the fixed header */
+    z-index: 900;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+    margin-bottom: 40px;
+}
+
+.deck-label {
+    font-size: 0.9rem;
+    color: #f0f6fc;
+    margin-bottom: 16px;
+    font-weight: 600;
+}
+
+.deck-actions {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.node-trigger-btn {
+    background: #21262d;
+    color: #c9d1d9;
+    border: 1px solid #30363d;
+    padding: 12px 20px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.node-trigger-btn:hover {
+    background: #30363d;
+    border-color: #8b949e;
+    color: #ffffff;
+}
+
+.btn-status-dot {
+    width: 8px;
+    height: 8px;
+    background: #8b949e;
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
+}
+
+.node-trigger-btn:hover .btn-status-dot {
+    background: #00ff66;
+    box-shadow: 0 0 8px #00ff66;
+}
+
+.node-trigger-btn.node-active {
+    background: #0d1117;
+    border-color: #00ff66;
+    color: #00ff66;
+    box-shadow: inset 0 0 4px rgba(0, 255, 102, 0.15);
+}
+
+.node-trigger-btn.node-active .btn-status-dot {
+    background: #00ff66;
+    box-shadow: 0 0 8px #00ff66;
+}
 
 /* ==========================================================================
-   5. HERO DISPLAY STACK
+   DYNAMIC CONTENT DATA BLOCKS
    ========================================================================== */
-.console-hero {
-    min-height: 80vh;
+
+.data-block {
+    padding: 60px 0;
+    border-bottom: 1px solid #21262d;
+    opacity: 0;
+    transform: translateY(15px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.data-block.section-revealed {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.section-header-meta {
+    font-family: monospace;
+    color: #8b949e;
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+}
+
+.data-block h2 {
+    font-size: 2rem;
+    color: #f0f6fc;
+    margin-bottom: 12px;
+}
+
+.section-intro {
+    color: #8b949e;
+    font-size: 1.05rem;
+    margin-bottom: 40px;
+    max-width: 700px;
+}
+
+/* 02 / Matrix Feature Layout */
+.matrix-layout {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+}
+
+.matrix-node {
+    background: #161b22;
+    border: 1px solid #30363d;
+    padding: 30px;
+    border-radius: 8px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    border-bottom: var(--thin-border);
-    padding-bottom: 40px;
 }
 
-.subtitle-indicator { color: var(--muted-gray); font-size: 0.9rem; margin-bottom: 12px; }
-.console-hero h1 { font-size: 3.8rem; font-weight: bold; letter-spacing: -1.5px; margin-bottom: 24px; }
-
-.cursor-blink-header::after {
-    content: "_";
-    color: var(--pure-white);
-    animation: terminalCursor 0.8s steps(2, start) infinite;
-    margin-left: 6px;
+.node-index {
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: #00ff66;
+    margin-bottom: 15px;
 }
 
-@keyframes terminalCursor { 
-    0%, 100% { opacity: 0; } 
-    50% { opacity: 1; } 
+.matrix-node h3 {
+    font-size: 1.35rem;
+    color: #f0f6fc;
+    margin-bottom: 6px;
 }
 
-.hero-summary { max-width: 780px; font-size: 1.15rem; line-height: 1.7; color: var(--muted-gray); margin-bottom: 44px; }
+.tech-tag {
+    font-family: monospace;
+    font-size: 0.8rem;
+    color: #8b949e;
+    margin-bottom: 20px;
+}
 
-.hero-links { display: flex; gap: 20px; }
-.action-link { 
-    padding: 12px 24px; 
-    font-size: 0.88rem; 
-    font-weight: bold; 
-    text-decoration: none; 
-    border: 1px solid var(--pure-white); 
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); 
+.matrix-node p {
+    color: #8b949e;
+    font-size: 0.95rem;
+    margin-bottom: 24px;
+    flex-grow: 1;
+}
+
+.use-case {
+    font-size: 0.9rem;
+    background: #0d1117;
+    padding: 12px 16px;
+    border-radius: 6px;
+    border-left: 3px solid #30363d;
+    color: #c9d1d9;
+}
+
+/* 03 / Clean Structural Log Tree */
+.clean-log-tree {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+.log-row {
+    display: flex;
+    gap: 40px;
+}
+
+.time-meta-col {
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+    padding-top: 4px;
+}
+
+.year-stamp {
+    font-weight: 700;
+    color: #f0f6fc;
+    font-size: 1.05rem;
+}
+
+.institution {
+    font-size: 0.85rem;
+    color: #8b949e;
+    margin-top: 4px;
+}
+
+.body-content-col h3 {
+    font-size: 1.35rem;
+    color: #f0f6fc;
+    margin-bottom: 16px;
+}
+
+.bullet-manifest {
+    list-style: none;
+}
+
+.bullet-manifest li {
     position: relative;
+    padding-left: 20px;
+    color: #8b949e;
+    margin-bottom: 10px;
+    font-size: 0.95rem;
+}
+
+.bullet-manifest li::before {
+    content: "–";
+    position: absolute;
+    left: 0;
+    color: #00ff66;
+    font-weight: bold;
+}
+
+/* 04 / Capabilities Matrix System Pills */
+.system-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.pill {
+    background: #21262d;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-family: monospace;
+}
+
+/* Responsive Structural Breakpoint Adjustments */
+@media (max-width: 768px) {
+    .log-row {
+        flex-direction: column;
+        gap: 8px;
+    }
+    .time-meta-col {
+        min-width: auto;
+    }
+    body {
+        padding-top: 60px;
+    }
+    .console-hero h1 {
+        font-size: 2.2rem;
+    }
+    .control-deck-container {
+        position: relative;
+        top: 0;
+    }
+}
+
+/* ==========================================================================
+   INDEPENDENT FLOATING COPILOT CONSOLE INTERFACE
+   ========================================================================== */
+
+.system-copilot-interface {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 60px;
+    height: 60px;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 50%;
+    z-index: 999;
     overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    /* 🔥 UPDATED: HIGH FREQUENCY BACKING FLASH LIGHT RADIUS EFFECT */
+    animation: emergencyStrobeLight 2s infinite alternate;
 }
 
-.primary-action { background: var(--pure-white); color: var(--core-black); }
-.primary-action:hover { 
-    background: var(--core-black); 
-    color: var(--pure-white);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.15);
+/* Expanded Dynamic Control Overlay */
+.system-copilot-interface.expanded {
+    width: 380px;
+    height: 520px;
+    border-radius: 16px;
+    animation: none; /* Stops flashing once expanded for better usability */
+    box-shadow: 0 12px 32px rgba(0,0,0,0.4);
 }
 
-.secondary-action { background: transparent; color: var(--pure-white); }
-.secondary-action:hover { 
-    background: rgba(255, 255, 255, 0.05);
-    transform: translateY(-2px);
-}
-.action-link:active { transform: translateY(0); }
-
-/* ==========================================================================
-   6. STRUCTURAL SEGMENTS (PROFILE & LOG TREE)
-   ========================================================================== */
-.stark-panel {
-    background: var(--dark-surface);
-    border: var(--thin-border);
-    padding: 44px;
+/* Header Core Interactive Anchor */
+.interface-header {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    padding: 0 18px;
+    color: #f0f6fc;
+    gap: 14px;
+    user-select: none;
+    background: #1f242c;
+    border-bottom: 1px solid #30363d;
 }
 
-.panel-tag { font-size: 0.8rem; color: var(--muted-gray); margin-bottom: 16px; }
-h2 { font-size: 2rem; font-weight: bold; letter-spacing: -0.5px; margin-bottom: 20px; }
-p { color: var(--muted-gray); line-height: 1.75; font-size: 1rem; }
-.section-intro { margin-bottom: 44px; color: var(--muted-gray); }
-
-.system-pills { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
-.pill { border: var(--thin-border); background: var(--core-black); color: var(--pure-white); padding: 6px 14px; font-size: 0.8rem; }
-
-/* Timeline History Records */
-.clean-log-tree { margin-top: 40px; display: flex; flex-direction: column; gap: 48px; }
-
-.log-row { 
-    display: grid; 
-    grid-template-columns: 260px 1fr; 
-    gap: 40px; 
-    padding: 10px 0;
-    transition: transform 0.25s ease;
-}
-.log-row:hover { transform: translateX(6px); }
-
-.time-meta-col { display: flex; flex-direction: column; gap: 4px; }
-.year-stamp { font-size: 1rem; font-weight: bold; color: var(--pure-white); }
-.institution { font-size: 0.85rem; color: var(--muted-gray); }
-
-.body-content-col h3 { font-size: 1.2rem; font-weight: bold; margin-bottom: 16px; }
-.bullet-manifest { list-style: none; }
-.bullet-manifest li { position: relative; padding-left: 20px; margin-bottom: 10px; color: var(--muted-gray); line-height: 1.65; font-size: 0.95rem; }
-.bullet-manifest li::before { content: "-"; position: absolute; left: 0; color: var(--pure-white); }
-
-/* ==========================================================================
-   7. INTERACTIVE CORES (AI AGENT PLAYGROUNDS & INTERESTS)
-   ========================================================================== */
-.matrix-layout { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; }
-
-.matrix-node { 
-    border: var(--thin-border); 
-    padding: 36px; 
-    background: var(--core-black); 
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
-}
-.matrix-node:hover { 
-    background: var(--dark-surface); 
-    border-color: #333333;
-    transform: scale(1.02);
+.chat-icon-core {
+    position: relative;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    color: #00ff66;
 }
 
-.node-index { font-size: 0.8rem; color: var(--muted-gray); margin-bottom: 16px; }
-.matrix-node h3 { font-size: 1.15rem; margin-bottom: 10px; font-weight: bold; }
-.matrix-node p { font-size: 0.9rem; color: var(--muted-gray); line-height: 1.6; margin-bottom: 24px; }
-
-.node-trigger-btn { 
-    background: transparent; 
-    border: var(--thin-border); 
-    color: var(--pure-white); 
-    padding: 10px 16px; 
-    cursor: pointer; 
-    width: 100%; 
-    text-align: left; 
-    font-size: 0.85rem; 
-    font-weight: bold; 
-    transition: all 0.2s ease; 
+.online-indicator {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    background: #00ff66;
+    border-radius: 50%;
+    border: 2px solid #1f242c;
 }
-.matrix-node:hover .node-trigger-btn { background: var(--pure-white); color: var(--core-black); }
 
-.interests-list-stark { display: flex; flex-direction: column; gap: 16px; margin-top: 24px; }
-.stark-interest-row { display: flex; gap: 15px; font-size: 0.95rem; line-height: 1.6; }
-.row-marker { color: var(--muted-gray); font-weight: bold; }
-
-/* ==========================================================================
-   8. INTERSECTION OBSERVER SCROLL REVEAL TARGETS
-   ========================================================================== */
-.reveal-on-scroll {
+.header-title-text {
+    font-size: 0.95rem;
+    font-weight: 600;
     opacity: 0;
-    transform: translateY(24px);
-    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+    transition: opacity 0.2s ease;
 }
-.reveal-on-scroll.active {
+
+.system-copilot-interface.expanded .header-title-text {
+    opacity: 1;
+}
+
+/* Internal Workspace Core Body Container */
+.interface-body {
+    height: calc(100% - 60px);
+    display: flex;
+    flex-direction: column;
+    background: #0d1117;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.system-copilot-interface.expanded .interface-body {
+    opacity: 1;
+}
+
+/* Log Render Output Feed */
+.output-log-stream {
+    flex-grow: 1;
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.incoming-bubble, .outgoing-bubble {
+    max-width: 85%;
+    padding: 12px 16px;
+    font-size: 0.9rem;
+    line-height: 1.45;
+}
+
+.incoming-bubble {
+    background: #161b22;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    border-radius: 2px 14px 14px 14px;
+    align-self: flex-start;
+}
+
+.outgoing-bubble {
+    background: #21262d;
+    border: 1px solid #388bfd;
+    color: #f0f6fc;
+    border-radius: 14px 14px 2px 14px;
+    align-self: flex-end;
+}
+
+/* Terminal Input Segment */
+.input-log-row {
+    padding: 14px;
+    border-top: 1px solid #30363d;
+    background: #161b22;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.input-lead {
+    font-family: monospace;
+    color: #00ff66;
+    font-weight: bold;
+}
+
+#userInputField {
+    flex-grow: 1;
+    background: transparent;
+    border: none;
+    color: #f0f6fc;
+    font-size: 0.9rem;
+    outline: none;
+    font-family: inherit;
+}
+
+#submitLogBtn {
+    background: transparent;
+    border: none;
+    color: #8b949e;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 4px;
+    transition: color 0.2s ease;
+}
+
+#submitLogBtn:hover {
+    color: #00ff66;
+}
+
+/* Adaptive Display Rules for Small Touchscreens */
+@media (max-width: 480px) {
+    .system-copilot-interface.expanded {
+        width: calc(100% - 32px);
+        right: 16px;
+        left: 16px;
+        bottom: 16px;
+        height: 480px;
+    }
+}
+
+/* ==========================================================================
+   HIGH-ATTENTION AI COPILOT TEASER HOOK (INTRUSIVE ALTERNATION SETUP)
+   ========================================================================== */
+
+.chat-teaser-hook {
+    position: absolute;
+    bottom: 80px; 
+    right: 12px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    z-index: 9999;
+    pointer-events: none; 
+    opacity: 0;
+    transform: translateY(15px);
+    transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 🔥 NEW: SHORT VIBRATING INTERRUPT BADGE HOVERING OVER THE SYSTEM ELEMENT */
+.chat-teaser-hook::before {
+    content: "⚡ HELLO! TAP ME";
+    position: absolute;
+    top: -38px;
+    right: 0;
+    background: #ff3366;
+    color: #ffffff;
+    font-family: monospace;
+    font-size: 0.75rem;
+    font-weight: 900;
+    padding: 4px 10px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    box-shadow: 0 4px 15px rgba(255, 51, 102, 0.6);
+    animation: badgeVibrate 0.2s linear infinite alternate, rapidStrobe 0.8s steps(2, start) infinite;
+}
+
+/* Beacon Shockwave Wrapper */
+.beacon-wrapper {
+    position: relative;
+    width: 44px;
+    height: 44px;
+}
+
+/* Hyper-Reflective Expanding Rings */
+.beacon-ring {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 2px solid #00ff66;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.ring-1 {
+    animation: neonWave 2.4s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+}
+
+.ring-2 {
+    animation: neonWave 2.4s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+    animation-delay: 1.2s;
+}
+
+/* Hyper-Bouncing High-Visibility Avatar */
+.avatar-bounce {
+    background: #ff3366; 
+    color: #ffffff;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    box-shadow: 0 0 20px rgba(255, 51, 102, 0.6);
+    position: relative;
+    z-index: 2;
+    animation: urgentFloat 1.5s ease-in-out infinite alternate;
+}
+
+/* Intrusive Command Line Dialog Box */
+.teaser-bubble.critical-alert {
+    background: #1a0f12; 
+    color: #f0f6fc;
+    border: 1px solid #ff3366;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-family: monospace;
+    max-width: 220px;
+    line-height: 1.4;
+    box-shadow: 0 10px 30px rgba(255, 51, 102, 0.2);
+    position: relative;
+}
+
+/* Small Pointer Arrow Color Correction */
+.teaser-bubble.critical-alert .bubble-arrow {
+    position: absolute;
+    bottom: -6px;
+    right: 25px;
+    width: 10px;
+    height: 10px;
+    background: #1a0f12;
+    border-right: 1px solid #ff3366;
+    border-bottom: 1px solid #ff3366;
+    transform: rotate(45deg);
+}
+
+/* Blinking Sub-Header System Label */
+.intrusive-flash-header {
+    font-weight: 900;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    color: #ff3366;
+    animation: rapidStrobe 0.8s steps(2, start) infinite;
+}
+
+/* Toggle Trigger Activation Class */
+.teaser-visible {
     opacity: 1;
     transform: translateY(0);
 }
 
 /* ==========================================================================
-   9. SYSTEM COPILOT - FLOATING MORPHING BADGE LAYOUT
+   ⚡ ANIMATION KEYFRAMES (ATTENTION & FLASH LIGHTING SUITE)
    ========================================================================== */
-.system-copilot-interface {
-    position: fixed !important;
-    bottom: 24px; 
-    right: 24px;
-    width: 130px; 
-    height: 130px; 
-    background: transparent;
-    border: none;
-    z-index: 9999;
-    touch-action: manipulation; /* Prevents double-tap zooming natively */
-    transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
-                height 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
-                border-radius 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    overflow: hidden;
-    border-radius: 50%;
-    /* Always-on active glow signature pulse */
-    box-shadow: 0 0 14px rgba(255,255,255,0.15), 0 0 28px rgba(255,255,255,0.05);
-    animation: alwaysGlowingRing 3s ease-in-out infinite;
-}
 
-@keyframes alwaysGlowingRing {
-    0%, 100% { box-shadow: 0 0 14px rgba(255,255,255,0.15), 0 0 28px rgba(255,255,255,0.05); }
-    50% { box-shadow: 0 0 24px rgba(255,255,255,0.35), 0 0 40px rgba(255,255,255,0.12); }
-}
-
-/* Expanded State Configuration */
-.system-copilot-interface.expanded {
-    width: 350px;
-    height: 460px; 
-    background: var(--dark-surface);
-    border: 1px solid #222;
-    border-radius: 14px;
-    animation: none; /* Disables pulse state while panel grid runs live */
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-}
-
-/* Header Canvas Area */
-.interface-header {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    display: flex; 
-    justify-content: center; 
-    align-items: center;
-    cursor: pointer;
-    z-index: 10;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.system-copilot-interface.expanded .interface-header {
-    height: 48px;
-    background: #111;
-    border-bottom: 1px solid #1a1a1a;
-    justify-content: flex-end;
-    padding-right: 12px;
-}
-
-/* Perfectly Balanced Circular Rotation Element */
-.rotating-text-wrapper {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    animation: spinClockwise 20s linear infinite;
-    pointer-events: none;
-    transition: opacity 0.2s ease;
-}
-
-.system-copilot-interface.expanded .rotating-text-wrapper {
-    opacity: 0;
-}
-
-@keyframes spinClockwise {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-/* Central Anchor Button Core Bubble */
-.chat-icon-core {
-    width: 56px; 
-    height: 56px;
-    background: var(--pure-white);
-    color: var(--core-black);
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    z-index: 5;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.chat-icon-core i { font-size: 1.2rem; transition: transform 0.2s ease; }
-
-.system-copilot-interface.expanded .chat-icon-core {
-    width: 26px; height: 26px;
-    background: #222;
-    color: var(--muted-gray);
-    box-shadow: none;
-}
-.system-copilot-interface.expanded .chat-icon-core:hover {
-    background: #ff3b30;
-    color: var(--pure-white);
-}
-
-/* Live Operational Dot */
-.online-indicator {
-    position: absolute; 
-    bottom: 2px; 
-    right: 2px;
-    width: 11px; 
-    height: 11px;
-    background: #00ff66;
-    border: 2px solid var(--pure-white);
-    border-radius: 50%;
-    transition: opacity 0.2s;
-}
-.system-copilot-interface.expanded .online-indicator { opacity: 0; }
-
-/* System Output Windows Layout Frame */
-.interface-body { 
-    height: calc(100% - 48px);
-    margin-top: 48px;
-    display: flex; 
-    flex-direction: column; 
-    padding: 16px; 
-    background: var(--dark-surface);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease;
-}
-.system-copilot-interface.expanded .interface-body { opacity: 1; pointer-events: auto; }
-
-.output-log-stream { 
-    flex: 1; overflow-y: auto; 
-    display: flex; flex-direction: column; gap: 12px; 
-    padding-right: 4px;
-}
-.output-log-stream::-webkit-scrollbar { width: 4px; }
-.output-log-stream::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
-
-.incoming-bubble, .outgoing-bubble {
-    padding: 10px 14px; border-radius: 8px;
-    max-width: 85%; font-size: 0.85rem; line-height: 1.5; word-wrap: break-word;
-}
-.incoming-bubble {
-    align-self: flex-start; background: #141414;
-    color: var(--pure-white); border-left: 2px solid var(--pure-white);
-}
-.outgoing-bubble {
-    align-self: flex-end; background: var(--pure-white);
-    color: var(--core-black); font-weight: bold;
-}
-
-.input-log-row {
-    display: flex; align-items: center; gap: 10px;
-    margin-top: 14px; padding: 2px 10px;
-    background: #111; border: 1px solid #222; border-radius: 12px;
-}
-#userInputField {
-    flex: 1; background: transparent; border: none; outline: none;
-    color: #fff; font-size: 0.9rem; padding: 10px 2px; font-family: inherit;
-}
-#submitLogBtn {
-    width: 34px; height: 34px; border: none; border-radius: 8px;
-    background: var(--pure-white); color: var(--core-black); cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-}
-
-/* ==========================================================================
-   10. HIGH-READABILITY TOUCH AND MOBILE VIEWPORT RENDERING
-   ========================================================================== */
-@media screen and (max-width: 1024px) {
-    .console-hero h1 { font-size: 3rem; }
-    .container-left, .container-right { max-width: 100%; }
-    .log-row { grid-template-columns: 200px 1fr; gap: 32px; }
-}
-
-@media screen and (max-width: 768px) {
-    /* Absolute hardware side bounds to shut down horizontal document scrolling */
-    html, body {
-        overflow-x: hidden !important;
-        position: relative;
-        width: 100%;
+/* High Intensity Multicolour Pulsing Background Glow */
+@keyframes emergencyStrobeLight {
+    0% {
+        box-shadow: 0 0 12px rgba(0, 255, 102, 0.4), 0 0 24px rgba(0, 255, 102, 0.2);
+        border-color: #30363d;
     }
+    50% {
+        box-shadow: 0 0 35px rgba(255, 51, 102, 0.8), 0 0 60px rgba(255, 51, 102, 0.4);
+        border-color: #ff3366;
+    }
+    100% {
+        box-shadow: 0 0 20px rgba(0, 198, 255, 0.6), 0 0 40px rgba(0, 198, 255, 0.3);
+        border-color: #00c6ff;
+    }
+}
 
-    .nav-wrapper { 
-        width: 100%; 
-        padding: 14px 16px; 
-        flex-direction: column; 
-        gap: 12px; 
-        overflow: hidden; 
+/* Shockwave Ring Outward Pulse */
+@keyframes neonWave {
+    0% {
+        transform: scale(0.6);
+        border-color: #ff3366;
+        opacity: 0.9;
     }
-    
-    .brand { font-size: 1rem; letter-spacing: 0px; }
-    
-    .menu-items { 
-        display: flex; flex-wrap: wrap; gap: 12px 16px;        
-        width: 100%; justify-content: center; padding: 0 4px 4px 4px;
+    50% {
+        border-color: #00ff66;
+        opacity: 0.5;
     }
-    .menu-items a { font-size: 0.82rem; white-space: nowrap; }
+    100% {
+        transform: scale(2.2);
+        border-color: #00ff66;
+        opacity: 0;
+    }
+}
 
-    /* Elastic layout constraints */
-    .workspace-wrapper { 
-        width: 100% !important; 
-        max-width: 100vw !important;
-        padding: 0 20px !important;
-        margin-top: 140px; 
-        overflow-x: hidden !important;
-        box-sizing: border-box;
-    }
-    
-    .data-block { 
-        padding: 40px 0; 
-        width: 100% !important;
-    }
-    
-    /* Dynamic Fluid Typography Formula scales fluidly between viewports */
-    .console-hero h1 { 
-        font-size: clamp(1.8rem, 7.5vw, 2.3rem); 
-        letter-spacing: -0.5px; 
-        margin-bottom: 16px;
-        word-wrap: break-word;
-        max-width: 100%;
-    }
-    
-    .hero-summary { font-size: 0.95rem; line-height: 1.6; margin-bottom: 32px; }
-    .hero-links { flex-direction: column; gap: 12px; width: 100%; }
-    .action-link { text-align: center; width: 100%; padding: 14px 24px; box-sizing: border-box; }
-    
-    /* Linearized grid patterns prevent table text column blowouts */
-    .clean-log-tree { gap: 32px; }
-    .log-row { 
-        grid-template-columns: 1fr !important; 
-        gap: 12px; 
-        width: 100% !important;
-    }
-    .log-row:hover { transform: none; }
-    .time-meta-col { flex-direction: row; gap: 12px; align-items: center; margin-bottom: 4px; }
-    
-    .bullet-manifest li { font-size: 0.9rem; padding-left: 16px; word-break: break-word; }
-    
-    .matrix-layout { grid-template-columns: 1fr !important; gap: 16px; width: 100%; }
-    .matrix-node { padding: 24px; width: 100% !important; box-sizing: border-box; }
-    .stark-panel { padding: 24px 16px; width: 100% !important; box-sizing: border-box; }
+/* Rapid Alert Text Strobe */
+@keyframes rapidStrobe {
+    0%, 100% { color: #ff3366; opacity: 1; }
+    50% { color: #00ff66; opacity: 0.3; }
+}
 
-    /* Bottom drawer layout alignment transformation rules for mobile engines */
-    .system-copilot-interface.expanded { 
-        bottom: 0; right: 0; 
-        width: 100% !important; height: 80vh !important; 
-        border-radius: 20px 20px 0 0; 
-    }
+/* Accelerated Floater Momentum */
+@keyframes urgentFloat {
+    0% { transform: translateY(0px) scale(1); }
+    100% { transform: translateY(-10px) scale(1.05); }
+}
+
+/* Intrusive High-Speed Structural Vibrate */
+@keyframes badgeVibrate {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    100% { transform: translate(-2px, -1px) rotate(-1deg); }
 }
