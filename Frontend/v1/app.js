@@ -213,7 +213,7 @@ function closeChatWindow() {
     const toggleIcon = document.getElementById('toggleIcon');
     const teaserNode = document.getElementById('chatTeaser');
     
-    if (copilotNode) 0copilotNode.classList.remove('expanded');
+    if (copilotNode) copilotNode.classList.remove('expanded');
     if (toggleIcon) toggleIcon.className = "fa-solid fa-message";
     
     if (teaserNode) {
