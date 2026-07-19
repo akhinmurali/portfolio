@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://your-backend-name.onrender.com/api/:path*"
+      "destination": "https://portfolio-196a.onrender.com/api/:path*"
     }
   ]
 }
