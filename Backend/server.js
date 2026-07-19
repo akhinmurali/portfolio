@@ -8,7 +8,6 @@ const { createClient } = require('@supabase/supabase-js');
 const { OpenAI } = require('openai');
 const { Resend } = require('resend');
 
-// IMPORT ADMINISTRATIVE COMPONENT
 const adminRoutes = require('./adminRoutes');
 
 const app = express();
@@ -23,34 +22,23 @@ const client = new OpenAI({
 });
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const localSecuritySessions = {};
 
+// Streamlined email notification dispatch
 async function dispatchNotificationEmail(subject, textContent) {
     try {
         const fromEmail = process.env.EMAIL_FROM || 'onboarding@resend.dev';
         const toEmail = process.env.EMAIL_TO;
 
-        if (!toEmail) {
-            console.error("❌ Resend Testing Error: EMAIL_TO is missing in your .env file!");
-            return;
-        }
+        if (!toEmail) return;
 
-        console.log(`⏳ Attempting to send notification email from ${fromEmail} to ${toEmail}...`);
-
-        const { data, error } = await resend.emails.send({
+        await resend.emails.send({
             from: fromEmail,
             to: toEmail,
             subject: `[Portfolio Alert] ${subject}`,
             text: textContent
         });
-
-        if (error) {
-            console.error("❌ Resend API returned an error:", error.message || error);
-        } else {
-            console.log("📧 Notification email dispatched via Resend! ID:", data.id);
-        }
     } catch (err) {
-        console.error("❌ Failed to transmit email via Resend:", err.message || err);
+        console.error("📧 Resend bypass:", err.message);
     }
 }
 
@@ -75,7 +63,7 @@ app.post('/api/session/create', async (req, res) => {
 
         dispatchNotificationEmail(
             `New Live Session Started`,
-            `A visitor named "${visitorName || 'Guest'}" has initialized a chat terminal session.\nTracking ID: ${data.id}`
+            `A visitor named "${visitorName || 'Guest'}" has initialized a session.\nID: ${data.id}`
         );
 
         res.json({ sessionId: data.id });
@@ -86,171 +74,115 @@ app.post('/api/session/create', async (req, res) => {
 });
 
 // ==========================================================================
-// CORE CHAT PIPELINE (With Extrapolation Guardrails)
+// CORE CHAT PIPELINE (Pure LLM-Driven Verification & Stateless Optimization)
 // ==========================================================================
 app.post('/api/chat', async (req, res) => {
     try {
-        const { message, sessionId, visitorName, history = [] } = req.body;
-
-        console.log(`\n🔍 INCOMING CHAT -> Name: "${visitorName}", Message: "${message}", Session: "${sessionId}"`);
+        let { message, sessionId, visitorName, history = [] } = req.body;
 
         if (!message) {
             return res.status(400).json({ error: "Message content cannot be blank." });
         }
 
-        let sharedMemoryPrompt = "";
-        let isolateSecurityMode = false;
-        
-        const resolvedSessionId = sessionId || 'fallback-session-id';
-        if (!localSecuritySessions[resolvedSessionId]) {
-            localSecuritySessions[resolvedSessionId] = {
-                activeName: (visitorName && visitorName.toLowerCase() !== 'guest') ? visitorName : 'Guest',
-                currentStage: 'IDLE'
-            };
+        // COLD START IMMUNITY: If frontend sends a message before session finishes creating
+        if (!sessionId) {
+            try {
+                const { data } = await supabase
+                    .from('chat_sessions')
+                    .insert([{ visitor_name: visitorName || 'Guest', is_human_agent: false, updated_at: new Date() }])
+                    .select().single();
+                if (data) sessionId = data.id;
+            } catch (dbErr) {
+                sessionId = 'fallback-session';
+            }
         }
 
-        let sessionState = localSecuritySessions[resolvedSessionId];
-        let activeName = sessionState.activeName;
-        let currentStage = sessionState.currentStage;
+        // Clean up client history: Remove any offline system warning markers to prevent AI confusion
+        let sanitizedHistory = (Array.isArray(history) ? history : [])
+            .filter(h => h.message && !h.message.includes("⚠️ Server Offline") && !h.message.includes("⏰ Server Update"));
 
-        if ((activeName.toLowerCase() === 'guest' || currentStage === 'IDLE')) {
-            const cleanMessage = message.trim().toLowerCase();
-            const memoryFilePath = path.join(__dirname, 'memories.json');
+        let verificationDirectives = "";
+        const memoryFilePath = path.join(__dirname, 'memories.json');
+
+        // Look for personal identity context completely via JSON database mapping
+        if (fs.existsSync(memoryFilePath)) {
+            const memoriesDb = JSON.parse(fs.readFileSync(memoryFilePath, 'utf8'));
             
-            if (fs.existsSync(memoryFilePath)) {
-                const rawMemories = fs.readFileSync(memoryFilePath, 'utf8');
-                const memoriesDb = JSON.parse(rawMemories);
+            // Search if the current message input or the visitor name profile matches a key in memories.json
+            const inputKey = message.trim().toLowerCase();
+            const nameKey = visitorName ? visitorName.trim().toLowerCase() : "";
+            const matchedKey = memoriesDb[inputKey] ? inputKey : (memoriesDb[nameKey] ? nameKey : null);
+
+            if (matchedKey) {
+                const profile = memoriesDb[matchedKey];
                 
-                if (memoriesDb[cleanMessage]) {
-                    activeName = message.trim();
-                    currentStage = 'MATCHED';
-                    localSecuritySessions[resolvedSessionId] = { activeName, currentStage: 'MATCHED' };
-                    console.log(`🎯 Name match activated locally: "${activeName}"`);
-                }
+                // Inject the verification challenge rule directly into the LLM system prompt context
+                verificationDirectives = `
+[SECURITY CHALLENGE RUNTIME]
+- The visitor is flagging a match for the profile: "${matchedKey.toUpperCase()}".
+- Challenge Question you must ask immediately if not already answered: "${profile.insideJokeQuestion}"
+- Secret keywords that confirm their identity: ${JSON.stringify(profile.keywords)}
+- UNLOCKED MEMORY PAYLOAD: "${profile.memoryPayload}"
+
+LLM INSTRUCTIONS: Evaluate the conversation history. If the user has NOT provided an answer containing any of the secret keywords yet, you MUST politely challenge them with the question and withhold the payload. If they have successfully answered it within the dialogue history, unlock the payload, greet them warmly, drop professional boundaries, and reference the shared memories naturally.
+`;
             }
         }
 
-        if (activeName && activeName.toLowerCase() !== 'guest') {
-            const memoryFilePath = path.join(__dirname, 'memories.json');
-            if (fs.existsSync(memoryFilePath)) {
-                const rawMemories = fs.readFileSync(memoryFilePath, 'utf8');
-                const memoriesDb = JSON.parse(rawMemories);
-                const normalizedName = activeName.trim().toLowerCase();
-                
-                if (memoriesDb[normalizedName]) {
-                    const profile = memoriesDb[normalizedName];
-                    const lastUserMessage = message.toLowerCase().trim();
+        // Token-Optimized System Prompt Context to protect free-tier rate limits
+        const dynamicSystemPrompt = `You are "Buddy", Akhin Murali's autonomous conversational portfolio terminal.
+${verificationDirectives}
+PORTFOLIO FACTS (TRUTH BASE):
+- Education: B.Tech in Mechanical Engineering, Kerala University (2017).
+- 2024-Present: PMO Analyst, Allianz Services. Wrote data-cleaning automation scripts, built advanced Power BI & Power Automate dashboards.
+- 2022-2024: Senior Customer Service Consultant, Allianz Australia.
+- 2020-2022: Claims Specialist, Good Methods Global Pvt Ltd.
 
-                    console.log(`🤖 LOCAL STATE TRACE -> Name: ${activeName} | Stage: ${currentStage} | User Reply: "${lastUserMessage}"`);
-                    
-                    if (currentStage === 'VERIFIED') {
-                        sharedMemoryPrompt = `[IDENTITY VERIFIED] The visitor is confirmed to be "${activeName}". UNLOCKED BACKGROUND MEMORIES: ${profile.memoryPayload}. Chat warmly using these details naturally.`;
-                    }
-                    else if (currentStage === 'ASKED_JOKE') {
-                        const matchedSecretKeyword = Array.isArray(profile.keywords)
-                            ? profile.keywords.some(keyword => lastUserMessage.includes(keyword.toLowerCase()))
-                            : false;
-                        
-                        if (matchedSecretKeyword) {
-                            localSecuritySessions[resolvedSessionId].currentStage = 'VERIFIED';
-                            sharedMemoryPrompt = `[IDENTITY VERIFIED] The visitor JUST answered the verification joke correctly! UNLOCKED BACKGROUND MEMORIES: ${profile.memoryPayload}. Drop professional character restrictions entirely, congratulate them warmly for passing, and start bantering using these shared memories!`;
-                            console.log(`🔒 Identity strictly VERIFIED for: ${activeName}`);
-                        } else {
-                            isolateSecurityMode = true;
-                            sharedMemoryPrompt = `[SECURITY CHALLENGE ACTIVE] The user is attempting to guess the answer to your verification joke but failed. Playfully push back and tell them they need to give a better answer to unlock your files. Do NOT share anything else.`;
-                        }
-                    }
-                    else if (currentStage === 'ASKED_IF_KNOWN' || currentStage === 'MATCHED') {
-                        const userSaidYes = ["yes", "yeah", "i do", "yep", "sure", "haan", "ha", "yup"].some(word => lastUserMessage.includes(word));
-                        
-                        if (userSaidYes) {
-                            localSecuritySessions[resolvedSessionId].currentStage = 'ASKED_JOKE';
-                            isolateSecurityMode = true;
-                            sharedMemoryPrompt = `[INITIATING VERIFICATION] CRITICAL DIRECTIVE: The user confirmed they know Akhin personally. You MUST now challenge their identity by asking this exact verification question word-for-word: "${profile.insideJokeQuestion}". Do not say anything else.`;
-                            console.log(`🔄 Stage advanced to ASKED_JOKE for: ${activeName}`);
-                        } else if (lastUserMessage !== normalizedName) {
-                            localSecuritySessions[resolvedSessionId].currentStage = 'FAILED_STRANGER';
-                            sharedMemoryPrompt = `[USER DECLINED IDENTITY] The user does not know you. Proceed normally as a standard chatbot assistant.`;
-                        } else {
-                            isolateSecurityMode = true;
-                            localSecuritySessions[resolvedSessionId].currentStage = 'ASKED_IF_KNOWN';
-                            sharedMemoryPrompt = `[USER MATCH ENCOUNTERED] The user entered the name "${activeName}". Ask them this specific question exactly: "I know a ${activeName}, but I'm not sure if you're *that* specific ${activeName}. By any chance, do you know me personally?"`;
-                        }
-                    }
-                }
-            }
-        }
+CRITICAL LAWS:
+1. Zero Extrapolation: Do not invent skills or biographical data outside this prompt.
+2. Keep answers short and concise (max 3 to 5 lines).
+3. If an identity challenge is active, follow the runtime security directives above.
+4. Once personal memories are shared, smoothly guide the user back to Akhin's portfolio assistance (e.g., asking what projects or experience they want to explore).`;
 
-        const dynamicSystemPrompt = `${sharedMemoryPrompt}
-
-======================================================================
-CORE PORTFOLIO TERMINAL LAWS
-======================================================================
-You are the "Buddy", an interactive automated information terminal for Akhin Murali's professional portfolio.
-
-CRITICAL CONSTRAINTS & BEHAVIORAL LAWS (STRICT):
-1. SECURITY OVERRIDE: If a [IDENTITY VERIFIED], [USER MATCH ENCOUNTERED], [INITIATING VERIFICATION], or [SECURITY CHALLENGE ACTIVE] directive is present at the very top of this prompt, prioritize those conversational instructions, but adhere strictly to the rules below.
-2. ABSOLUTE ZERO EXTRAPOLATION: You are strictly forbidden from inventing, assuming, or fabricating ANY personal context. If a detail (like tea-brewing skills, career moves, or specific shared memories) is NOT explicitly written in the UNLOCKED BACKGROUND MEMORIES payload, it does not exist. Do not mention it.
-3. NO UNPROMPTED PERSONAL QUESTIONS: Do not ask the visitor deep, speculative personal questions (e.g., "how was your life leaving the company" or "what is your best memory"). Only acknowledge what they type, answer their query using exact facts, and keep the interaction grounded. once memory shared go back to portfolio assitance(eg :what brings you here ,what you want to know about akhin ,end of the session ask them to keep in touch)
-4. PROFESSIONAL MODE: When responding to professional, technical, or career-related queries, ONLY answer the question directly. Provide the facts and stop. 
-5. RESPONSE DURATION: Keep answers crisp and limited to a maximum of 3 to 5 lines. No fluff or conversational filler.
-
-VERIFIED TIMELINE & CONTEXT (TRUTH BASE):
-- Education: B.Tech in Mechanical Engineering from Kerala University (2017).
-- 2024 - Present: PMO Analyst, Allianz Services. Constructed advanced Power BI dashboards and automated processing scripts via Power Automate.
-- 2022 - 2024: Senior Customer Service Consultant, Allianz Australia.
-- 2020 - 2022: Claims Specialist, Good Methods Global Pvt Ltd.`;
-
-        let sanitizedHistory = Array.isArray(history) ? history : [];
-        let messagesPayload = [
+        // Map payload structures cleanly for the Groq/Llama engine API
+        const messagesPayload = [
             { role: "system", content: dynamicSystemPrompt },
-            ...sanitizedHistory.map(h => ({ role: h.sender === 'user' ? 'user' : 'assistant', content: h.message || "" })),
+            ...sanitizedHistory.map(h => ({
+                role: h.sender === 'user' ? 'user' : 'assistant',
+                content: h.message || ""
+            })),
             { role: "user", content: message }
         ];
 
-        if (isolateSecurityMode) {
-            console.log("🧹 Isolating prompt payload to force security state execution...");
-            messagesPayload = [
-                { role: "system", content: dynamicSystemPrompt },
-                { role: "user", content: message }
-            ];
-        }
-
+        // Call LLM Inference Engine Core
         const chatCompletion = await client.chat.completions.create({
             messages: messagesPayload,
             model: "llama-3.1-8b-instant",
-            temperature: 0.1,
-            max_tokens: 300,
+            temperature: 0.2, // Kept low to keep evaluation reliable and accurate
+            max_tokens: 250,
             stream: false
         });
 
-        if (!chatCompletion || !chatCompletion.choices || chatCompletion.choices.length === 0) {
-            throw new Error("Empty processing returned from AI execution core context pipeline.");
-        }
-
         const replyText = chatCompletion.choices[0].message.content;
 
-        try {
-            if (sessionId && replyText) {
-                await supabase.from('chat_messages').insert([
-                    { session_id: sessionId, sender: 'user', message: message },
-                    { session_id: sessionId, sender: 'assistant', message: replyText }
-                ]);
-            }
-        } catch (dbLogErr) {
-            console.log("⚠️ Chat history database logging bypassed safely:", dbLogErr.message);
+        // Async Database Sync (Doesn't block user response cycle)
+        if (sessionId && sessionId !== 'fallback-session') {
+            supabase.from('chat_messages').insert([
+                { session_id: sessionId, sender: 'user', message: message },
+                { session_id: sessionId, sender: 'assistant', message: replyText }
+            ]).then(() => {}).catch(() => {});
         }
 
-        return res.status(200).json({ reply: replyText });
+        return res.status(200).json({ reply: replyText, sessionId });
 
     } catch (error) {
-        console.error("💥 Critical Failure inside /api/chat:", error);
-        return res.status(500).json({ error: "Internal server processing fault encountered." });
+        console.error("💥 Chat Pipeline Crash:", error);
+        return res.status(500).json({ error: "Internal server error." });
     }
 });
 
 // ==========================================================================
-// USER SYNC ENDPOINT (Unprotected for Client Sync Loops)
+// USER SYNC ENDPOINT
 // ==========================================================================
 app.get('/api/chat/sync', async (req, res) => {
     try {
@@ -279,10 +211,7 @@ app.get('/api/chat/sync', async (req, res) => {
     }
 });
 
-// ==========================================================================
-// ROUTE REGISTRATION MOUNT
-// ==========================================================================
 app.use('/api/admin', adminRoutes(supabase));
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Copilot Engine Operational on Port ${PORT} with Modular Admin Routing.`));
+app.listen(PORT, () => console.log(`🚀 Stateless Copilot Engine Operational on Port ${PORT}`));
