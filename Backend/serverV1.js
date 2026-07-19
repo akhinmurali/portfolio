@@ -18,7 +18,7 @@ app.use(express.json());
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
 // Initialize Groq AI SDK
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const groq = new Groq({ apiKey: process.env.GROK_API_KEY });
 
 // JWT Authentication Verification Middleware for Admin-Only Routes
 function authenticateAdminToken(req, res, next) {
