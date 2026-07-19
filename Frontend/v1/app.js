@@ -150,22 +150,16 @@ function setupRealtimeListeners() {
 function handleTakeoverUIStateChange(isHumanActive) {
     const headerTitleNode = document.querySelector('#chatHeader h4');
     
-    if (isHumanActive && !isLiveHumanOverride) {
+    if (isHumanActive && !isLiveHumanOverride) 
         isLiveHumanOverride = true;
-        appendMessageBubble('incoming', "⚡ <em>[System Alert]: Akhin Murali has joined the terminal interface. AI controls disabled.</em>");
-        if (headerTitleNode) {
-            headerTitleNode.innerHTML = "⚡ [Akhin Connected]";
-            headerTitleNode.style.color = "#ff0055";
-        }
-    } else if (!isHumanActive && isLiveHumanOverride) {
+       
+        
+     else (!isHumanActive && isLiveHumanOverride) {
         isLiveHumanOverride = false;
-        appendMessageBubble('incoming', "🤖 <em>[System Alert]: Akhin has disconnected. AI Copilot system reassigned.</em>");
-        if (headerTitleNode) {
-            headerTitleNode.innerHTML = "🤖 Buddy | AI Portfolio Copilot";
-            headerTitleNode.style.color = "";
+        
         }
-    }
-}
+    
+
 
 // --- 5. INTERFACE VISUAL MOTIONS & TEASER ENGINE ---
 function initializeTeaserEngine() {
