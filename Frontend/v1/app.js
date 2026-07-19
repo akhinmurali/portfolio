@@ -3,26 +3,20 @@
  * Production Realtime Intercept Chat Interface (Zero-Server-Load Edition)
  */
 
-// --- CONFIGURATION MANAGEMENT ---
-// ⚠️ ACTION REQUIRED: Replace this placeholder string with your actual live Render Web Service URL.
 const BACKEND_URL = "https://portfolio-196a.onrender.com";
 
-// Dynamic credentials populated safely via backend config handshake on startup
 let SUPABASE_URL = "";
 let SUPABASE_ANON_KEY = "";
 let supabaseClient = null;
 
-// --- 1. GLOBAL STATE DEFINITIONS ---
 let conversationHistory = [];
 const MAX_HISTORY_DEPTH = 6;
 let isWaitingForResponse = false;
 let isLiveHumanOverride = false;
 let sessionId = null;          
 let visitorName = "Guest";     
-let renderedMessageIds = new Set(); // Prevents duplication glitches across streams
+let renderedMessageIds = new Set();
 
-// Teaser Engine States
-let teaserInterval = null;
 const TEASER_PHRASES = [
     "🤖 System Status: Unsupervised. Talk to me.",
     "⚡ Click here to initiate Human Takeover protocol.",
@@ -31,17 +25,16 @@ const TEASER_PHRASES = [
     "📂 Type 'resume' to see if I can break Akhin's firewall."
 ];
 
-// --- 2. LOCAL FAQ INTERCEPTOR MATRIX ---
+// --- 2. LOCAL FAQ INTERCEPTOR MATRIX (Updated with Notice Rule) ---
 const LOCAL_FAQ_REGISTRY = {
-    contact: "You can reach Akhin directly via email at your-email@domain.com or connect through his LinkedIn profile linked on this page.",
-    email: "Akhin's professional email is your-email@domain.com.",
+    contact: "You can reach Akhin directly via email at your-email@domain.com. Note: during working hours it will be difficult to respond immediately, but if you don't find any response in a minute, please contact via email.",
+    email: "Akhin's professional email is your-email@domain.com. If you try to reach him live during working hours it may be difficult to get an instant reply; please drop an email if there is no response within a minute.",
     stack: "Akhin builds automation pipelines using JavaScript, Node.js, Express, Python, Google Gemini frameworks, and ServiceNow interfaces.",
     resume: "You can view Akhin's detailed roles and achievements by clicking the 'Explore My Work History' button right here on the main page.",
     projects: "His core builds include a Smart Digital Front Desk with live human takeover, an AI Resource Planner, and a PMO Automation Tool Suite.",
-    allianz: "At Allianz, Akhin worked as a PMO Analyst focusing on project tracking tools and automated reporting scripts, and previously handled motor insurance accounts at Allianz Australia."
+    allianz: "At Allianz, Akhin worked as a PMO Analyst focusing on project tracking tools and automated reporting scripts."
 };
 
-// --- 3. LIFECYCLE LISTENERS & PROGRAMMATIC INTERACTION BINDINGS ---
 document.addEventListener('DOMContentLoaded', () => {
     const copilotNode = document.getElementById('copilotNode');
     const chatHeader = document.getElementById('chatHeader');
@@ -84,20 +77,16 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeBackendSession();
 });
 
-// --- 4. DYNAMIC CONFIG HANDSHAKE & SUPABASE REALTIME STREAM ---
 async function initializeBackendSession() {
     try {
-        // 1. Fetch safe, public database keys from the Render backend environment mappings
         const configResponse = await fetch(`${BACKEND_URL}/api/config`);
         const config = await configResponse.json();
         
         SUPABASE_URL = config.supabaseUrl;
         SUPABASE_ANON_KEY = config.supabaseAnonKey;
         
-        // 2. Instantiate the Supabase WebSocket Client Engine
         supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // 3. Perform standard core session handshake
         const response = await fetch(`${BACKEND_URL}/api/session/create`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -108,8 +97,6 @@ async function initializeBackendSession() {
             const data = await response.json();
             sessionId = data.sessionId;
             console.log(`📡 Handshake secure. WebSockets online. Session ID: ${sessionId}`);
-            
-            // 4. Mount event streams (replaces old interval sync timers completely)
             setupRealtimeListeners();
         }
     } catch (err) {
@@ -120,12 +107,10 @@ async function initializeBackendSession() {
 function setupRealtimeListeners() {
     if (!sessionId || !supabaseClient) return;
 
-    // Stream A: Listen for new messages inserted by the Admin Dashboard Panel
     supabaseClient
         .channel('public:chat_messages')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, payload => {
             const msg = payload.new;
-            // Intercept and print message if it belongs to this viewport and came from the admin control ('me')
             if (msg.session_id === sessionId && msg.sender === 'me') {
                 if (!renderedMessageIds.has(msg.id)) {
                     renderedMessageIds.add(msg.id);
@@ -135,7 +120,6 @@ function setupRealtimeListeners() {
         })
         .subscribe();
 
-    // Stream B: Listen for live session data switches (Manual Intercept / Release Toggles)
     supabaseClient
         .channel('public:chat_sessions')
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chat_sessions' }, payload => {
@@ -147,27 +131,19 @@ function setupRealtimeListeners() {
         .subscribe();
 }
 
+// 🛠️ FIXED STRUCTURAL SYNTAX CRASH HERE
 function handleTakeoverUIStateChange(isHumanActive) {
     const headerTitleNode = document.querySelector('#chatHeader h4');
     
-    if (isHumanActive && !isLiveHumanOverride) {
+    if (isHumanActive) {
         isLiveHumanOverride = true;
-        appendMessageBubble('incoming', "⚡ <em>[System Alert]: Akhin Murali has joined the terminal interface. AI controls disabled.</em>");
-        if (headerTitleNode) {
-            headerTitleNode.innerHTML = "⚡ [Akhin Connected]";
-            headerTitleNode.style.color = "#ff0055";
-        }
-    } else if (!isHumanActive && isLiveHumanOverride) {
+        if (headerTitleNode) headerTitleNode.innerHTML = "💬 Chatting with Akhin (Live)";
+    } else {
         isLiveHumanOverride = false;
-        appendMessageBubble('incoming', "🤖 <em>[System Alert]: Akhin has disconnected. AI Copilot system reassigned.</em>");
-        if (headerTitleNode) {
-            headerTitleNode.innerHTML = "🤖 Buddy | AI Portfolio Copilot";
-            headerTitleNode.style.color = "";
-        }
+        if (headerTitleNode) headerTitleNode.innerHTML = "🤖 Portfolio Copilot";
     }
 }
 
-// --- 5. INTERFACE VISUAL MOTIONS & TEASER ENGINE ---
 function initializeTeaserEngine() {
     const teaserNode = document.getElementById('chatTeaser');
     const textNode = document.getElementById('teaserText');
@@ -276,7 +252,6 @@ function toggleWorkspaceSection(targetType) {
     }
 }
 
-// --- 6. NETWORK PAYLOAD & CORE CONVERSATION PROCESSING ---
 async function processUserSubmission() {
     const inputField = document.getElementById('userInputField');
     const logStream = document.getElementById('logStream');
@@ -286,19 +261,16 @@ async function processUserSubmission() {
     const rawQuery = inputField.value.trim();
     if (!rawQuery) return;
 
-    // Intent Detection Context Filter
     const clearQuery = rawQuery.toLowerCase();
     if (clearQuery.startsWith("my name is ") || clearQuery.startsWith("i am ")) {
         const structuralWords = rawQuery.split(" ");
         visitorName = structuralWords[structuralWords.length - 1].replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
     }
 
-    // Immediately paint submission out onto front-end terminal
     appendMessageBubble('outgoing', rawQuery);
     inputField.value = '';
     setChatLoadingState(true);
 
-    // If active takeover is verified, hit the shared public path to log the text and exit early
     if (isLiveHumanOverride) {
         try {
             await fetch(`${BACKEND_URL}/api/chat`, {
@@ -314,7 +286,6 @@ async function processUserSubmission() {
         return;
     }
 
-    // Check FAQ Registry
     const matchedResponse = checkLocalFaqIntercept(rawQuery);
     if (matchedResponse) {
         setTimeout(() => {
@@ -333,7 +304,7 @@ async function processUserSubmission() {
 
     try {
         const timeoutId = setTimeout(() => {
-            appendMessageBubble('incoming', "⏰ Server Update: Yup, it's still rubbing its eyes. Render's free tier takes about 30 seconds to fully boot up on the first request. Hang tight, the gears are turning!");
+            appendMessageBubble('incoming', "⏰ Server Update: Render's free tier takes about 30 seconds to fully boot up on the first request. Hang tight!");
         }, 4500);
 
         const response = await fetch(`${BACKEND_URL}/api/chat`, {
@@ -355,19 +326,23 @@ async function processUserSubmission() {
         const data = await response.json();
         if (data.sessionId) sessionId = data.sessionId;
 
+        if (data.humanActive) {
+            isLiveHumanOverride = true;
+            handleTakeoverUIStateChange(true);
+        }
+
         if (data.reply) {
             conversationHistory.push({ sender: 'assistant', message: data.reply });
             appendMessageBubble('incoming', data.reply);
         }
     } catch (error) {
         if (typingIndicator) typingIndicator.remove();
-        appendMessageBubble('incoming', "⚠️ Server Offline: Since the backend isn't running right now, I can't look up custom queries. Try asking about my <strong>projects</strong>, <strong>stack</strong>, or <strong>experience</strong>!");
+        appendMessageBubble('incoming', "⚠️ Server Offline: Try asking about my <strong>projects</strong>, <strong>stack</strong>, or <strong>experience</strong>!");
     } finally {
         setChatLoadingState(false);
     }
 }
 
-// --- 7. UTILITY METHODS ---
 function checkLocalFaqIntercept(query) {
     const lowerQuery = query.toLowerCase();
     if (lowerQuery.includes('email') || lowerQuery.includes('contact') || lowerQuery.includes('reach')) return LOCAL_FAQ_REGISTRY.contact;
