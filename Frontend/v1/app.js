@@ -6,7 +6,7 @@
 // --- CONFIGURATION MANAGEMENT ---
 // ⚠️ ACTION REQUIRED: Replace this placeholder string with your actual live Render Web Service URL.
 // Ensure there is NO trailing slash at the end of the URL string (e.g., "https://your-service.onrender.com").
-const BACKEND_URL = "https://YOUR-ACTUAL-RENDER-URL.onrender.com";
+const BACKEND_URL = "https://portfolio-196a.onrender.com";
 
 // --- 1. GLOBAL STATE DEFINITIONS ---
 let conversationHistory = [];
