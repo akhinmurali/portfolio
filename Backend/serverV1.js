@@ -142,7 +142,7 @@ app.post('/api/chat', async (req, res) => {
         // Trigger Inference API Pipeline Request
         const chatCompletion = await groq.chat.completions.create({
             messages: cleanContextArray,
-            model: "llama3-8b-8192",
+            model: "llama3.1-8b-instant",
             temperature: 0.6,
             max_tokens: 300
         });
