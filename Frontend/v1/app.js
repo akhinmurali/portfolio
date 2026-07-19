@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- 4. BACKEND HANDSHAKE & INITIALIZATION SYSTEM ---
 async function initializeBackendSession() {
     try {
-        const response = await fetch('https://po.onrender.com//api/session/create', {
+        const response = await fetch('https://portfolio-196a.onrender.com/api/session/create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ visitorName })
@@ -250,7 +250,7 @@ async function processUserSubmission() {
         appendMessageBubble('outgoing', rawQuery);
         inputField.value = '';
         try {
-            await fetch('https://po.onrender.com//api/admin/message', {
+            await fetch('https://portfolio-196a.onrender.com/api/admin/message', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: rawQuery, sessionId })
@@ -293,7 +293,7 @@ async function processUserSubmission() {
             appendMessageBubble('incoming', "⏰ Server Update: Yup, it's still rubbing its eyes. Render's free tier takes about 30 seconds to fully boot up on the first request. Hang tight, the gears are turning!");
         }, 4500);
 
-        const response = await fetch('https://po.onrender.com/api/chat', {
+        const response = await fetch('https://portfolio-196a.onrender.com', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -395,7 +395,7 @@ function initializeHumanTakeoverMode() {
     liveCheckInterval = setInterval(async () => {
         if (!sessionId) return;
         try {
-            const check = await fetch(`https://po.onrender.com/api/chat/sync?sessionId=${sessionId}`);
+            const check = await fetch(`https://portfolio-196a.onrender.com/api/chat/sync?sessionId=${sessionId}`);
             const data = await check.json();
             
             if (data.messages && data.messages.length > 0) {
