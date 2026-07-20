@@ -84,7 +84,7 @@ const chatTools = [
 app.post('/api/chat', async (req, res) => {
     try {
         let { message, sessionId, visitorName, history = [] } = req.body;
-        const emailId = process.env.AKHIN_EMAIL || "your-email@domain.com";
+        const emailId = process.env.AKHIN_EMAIL || "akhinmurali@gmail.com";
         const discordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
 
         if (!message) {
@@ -142,7 +142,7 @@ app.post('/api/chat', async (req, res) => {
                 }
             }
 
-            const liveTakeoverNotice = `Done! I've sent a direct message to Akhin's Discord server to alert him. If he's online, he can log into this session and continue chatting with you right here!\n\n✉️ You can also email him directly at: **${emailId}**.\n\n⚠️ *Please note: During working hours it will be difficult to respond immediately, but if you don't find any response in a minute, please contact via email.*`;
+            const liveTakeoverNotice = `Done! I've sent a direct message to Akhin. If he's online, he can log into this session and continue chatting with you right here!\n\n✉️ You can also email him directly at: **${emailId}**.\n\n⚠️ *Please note: During working hours it will be difficult to respond immediately, but if you don't find any response in a minute, please contact via email.*`;
             
             if (sessionId !== 'fallback-session') {
                 await supabase.from('chat_messages').insert([{ session_id: sessionId, sender: 'assistant', message: liveTakeoverNotice }]);
