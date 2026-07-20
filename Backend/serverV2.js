@@ -5,7 +5,6 @@ const jwt = require('jsonwebtoken');
 const { createClient } = require('@supabase/supabase-js');
 const Groq = require('groq-sdk');
 
-// ⚡ Import your admin routes module (ensure the filename matches your admin routes file, e.g., adminRoutes.js)
 const adminRoutes = require('./adminRoutes');
 
 const app = express();
@@ -14,13 +13,9 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Initialize Administrative Supabase Client (Bypasses RLS)
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
-
-// Initialize Groq AI SDK
 const groq = new Groq({ apiKey: process.env.GROK_API_KEY });
 
-// ⚡ Mount the admin router to resolve the 404 error on /api/admin/login
 app.use('/api/admin', adminRoutes(supabase));
 
 app.get('/api/config', (req, res) => {
@@ -30,9 +25,11 @@ app.get('/api/config', (req, res) => {
     });
 });
 
-// Handshake Endpoint
+// WELCOME WEBHOOK: Triggers immediately when a user opens/enters the chat
 app.post('/api/session/create', async (req, res) => {
     const { visitorName } = req.body;
+    const discordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
+
     try {
         const { data, error } = await supabase
             .from('chat_sessions')
@@ -45,14 +42,45 @@ app.post('/api/session/create', async (req, res) => {
             .single();
 
         if (error) throw error;
-        res.status(200).json({ sessionId: data.id });
+        const sessionId = data.id;
+
+        if (discordWebhookUrl) {
+            await fetch(discordWebhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    content: `👋 **New Visitor Joined Portfolio Chat!**\n👤 **Visitor:** ${visitorName || 'Guest'}\n🆔 **Session ID:** \`${sessionId}\``
+                })
+            }).catch(err => console.error("Welcome webhook failed:", err));
+        }
+
+        res.status(200).json({ sessionId });
     } catch (err) {
         console.error("Session compilation drop:", err);
         res.status(500).json({ error: "Could not provision live tracking session." });
     }
 });
 
-// Core Interactive Chat Processing Pipeline
+const chatTools = [
+    {
+        type: "function",
+        function: {
+            name: "trigger_discord_handoff",
+            description: "Alerts Akhin on his Discord server for a live chat handoff. Use this tool if the user explicitly wants to talk to Akhin, appears confused, asks off-topic questions, or requires human assistance.",
+            parameters: {
+                type: "object",
+                properties: {
+                    reason: {
+                        type: "string",
+                        description: "The contextual reason why the handoff is being triggered."
+                    }
+                },
+                required: ["reason"]
+            }
+        }
+    }
+];
+
 app.post('/api/chat', async (req, res) => {
     try {
         let { message, sessionId, visitorName, history = [] } = req.body;
@@ -71,7 +99,7 @@ app.post('/api/chat', async (req, res) => {
             sessionId = data ? data.id : 'fallback-session';
         }
 
-        // 1. ACTIVE HUMAN INTERCEPT CHECK
+        // Active human intercept check (Only honors manual toggle from the admin panel)
         if (sessionId && sessionId !== 'fallback-session') {
             const { data: currentSession } = await supabase
                 .from('chat_sessions')
@@ -88,23 +116,18 @@ app.post('/api/chat', async (req, res) => {
             }
         }
 
-        // 2. DISCORD WEBHOOK & HUMAN ESCALATION INTERCEPT MATRIX
+        // Keyword/Manual Handoff Trigger Fallback Check
         const cleanQuery = message.toLowerCase();
         const affirmativeTriggers = ['yes', 'sure', 'yeah', 'yep', 'connect', 'talk to akhin', 'please'];
         const isUserAcceptingHandoff = affirmativeTriggers.some(word => cleanQuery.includes(word));
-        
-        // Find if the last assistant bubble was offering the human handoff prompt
         const lastAiBubble = [...history].reverse().find(msg => msg.sender === 'assistant')?.message || '';
         const didAiOfferHandoff = lastAiBubble.toLowerCase().includes('talk to akhin');
 
         if ((isUserAcceptingHandoff && didAiOfferHandoff) || cleanQuery.includes('connect discord')) {
-            // A. Update Supabase Session state to True so future messages route directly to admin dashboard
             if (sessionId !== 'fallback-session') {
-                await supabase.from('chat_sessions').update({ is_human_agent: true, updated_at: new Date() }).eq('id', sessionId);
                 await supabase.from('chat_messages').insert([{ session_id: sessionId, sender: 'user', message: message }]);
             }
 
-            // B. Dispatch secure request payload out onto your active Discord server webhook
             if (discordWebhookUrl) {
                 try {
                     await fetch(discordWebhookUrl, {
@@ -119,23 +142,20 @@ app.post('/api/chat', async (req, res) => {
                 }
             }
 
-            // C. Return explicit tracking response state to front-end viewport
             const liveTakeoverNotice = `Done! I've sent a direct message to Akhin's Discord server to alert him. If he's online, he can log into this session and continue chatting with you right here!\n\n✉️ You can also email him directly at: **${emailId}**.\n\n⚠️ *Please note: During working hours it will be difficult to respond immediately, but if you don't find any response in a minute, please contact via email.*`;
             
             if (sessionId !== 'fallback-session') {
                 await supabase.from('chat_messages').insert([{ session_id: sessionId, sender: 'assistant', message: liveTakeoverNotice }]);
             }
             
-            return res.status(200).json({ reply: liveTakeoverNotice, sessionId, humanActive: true });
+            return res.status(200).json({ reply: liveTakeoverNotice, sessionId, humanActive: false });
         }
 
-        // Write the standard message history trace to Supabase
         if (sessionId !== 'fallback-session') {
             await supabase.from('chat_messages').insert([{ session_id: sessionId, sender: 'user', message: message }]);
             await supabase.from('chat_sessions').update({ updated_at: new Date() }).eq('id', sessionId);
         }
 
-        // 3. BUILD CONTEXT WINDOW WITH DYNAMIC SYSTEM DIRECTIVES
         const cleanContextArray = history.map(msg => ({
             role: msg.sender === 'user' ? 'user' : 'assistant',
             content: msg.message
@@ -144,31 +164,47 @@ app.post('/api/chat', async (req, res) => {
         cleanContextArray.unshift({
             role: "system",
             content: `You are Buddy, Akhin Murali's conversational Portfolio Assistant. Keep answers precise, short, and technical. 
-
-start by asking the user's name and what they do naturally, without deviating from portfolio subjects or being intrusive. Let them know how you can help with their work. If you cannot help, let them know it was good to meet them and perhaps you can collaborate in the future.
-
-INITIALIZATION RULE:
-- When a user first steps into/opens the chat, immediately initiate the Discord webhook to alert Akhin that a visitor has joined.
--Do Not provide factual or false information about Akhin .Do not artifically try to match his skills to users requirements if it matches only then try to build a rapport on the topic else have a friendly converstion 
-ESCALATION & WEBHOOK RULES:
-Trigger the Discord webhook and append the mandatory text block immediately if:
-1. The user explicitly states they want to talk to Akhin.
-2. The user asks questions completely unrelated to tech/projects/career (off-topic), appears highly confused, or the conversation history length exceeds 5 rounds. (For these cases, first ask: "Do you want to talk to Akhin about these?", and on User Confirmation "Yes", trigger the webhook).
-
-MANDATORY TEXT BLOCK (append this exactly when the webhook is triggered):
-"You can contact him directly at ${emailId}. I’ve alerted Akhin so he can step in live. Please note that during working hours it can sometimes take a moment for him to respond. If you don't receive a response within a minute, please feel free to contact him directly via email."`
-		});
+Provide an excellent customer experience by asking the user's name and what they do naturally, without deviating from portfolio subjects or being intrusive. 
+If the user wants to talk to Akhin, appears confused, or goes off-topic, use the trigger_discord_handoff tool.`
+        });
         
         cleanContextArray.push({ role: "user", content: message });
 
         const chatCompletion = await groq.chat.completions.create({
             messages: cleanContextArray,
-            model: "llama-3.1-8b-instant",
+            model: "llama-3.3-70b-versatile",
+            tools: chatTools,
+            tool_choice: "auto",
             temperature: 0.5,
             max_tokens: 300
         });
 
-        const systemReplyText = chatCompletion.choices[0]?.message?.content || "Connection lost. Re-establishing link pipeline context.";
+        const responseMessage = chatCompletion.choices[0]?.message;
+
+        if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
+            const toolCall = responseMessage.tool_calls[0];
+            const args = JSON.parse(toolCall.function.arguments || '{}');
+
+            if (discordWebhookUrl) {
+                await fetch(discordWebhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        content: `🚨 **Autonomous Llama Handoff Triggered!**\n👤 **Visitor:** ${visitorName || 'Guest'}\n🔍 **Reason:** ${args.reason || 'User requested human support'}\n🆔 **Session ID:** \`${sessionId}\``
+                    })
+                }).catch(err => console.error("Discord webhook error:", err));
+            }
+
+            const liveTakeoverNotice = `Done! I've sent a direct message to Akhin's Discord server to alert him. If he's online, he can log into this session and continue chatting with you right here!\n\n✉️ You can also email him directly at: **${emailId}**.\n\n⚠️ *Please note: During working hours it will be difficult to respond immediately, but if you don't find any response in a minute, please contact via email.*`;
+
+            if (sessionId !== 'fallback-session') {
+                await supabase.from('chat_messages').insert([{ session_id: sessionId, sender: 'assistant', message: liveTakeoverNotice }]);
+            }
+
+            return res.status(200).json({ reply: liveTakeoverNotice, sessionId, humanActive: false });
+        }
+
+        const systemReplyText = responseMessage.content || "Connection lost. Re-establishing link pipeline context.";
 
         if (sessionId !== 'fallback-session') {
             await supabase.from('chat_messages').insert([{ session_id: sessionId, sender: 'assistant', message: systemReplyText }]);
