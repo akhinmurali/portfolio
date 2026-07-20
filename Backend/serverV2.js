@@ -195,7 +195,7 @@ If the user wants to talk to Akhin, appears confused, or goes off-topic, use the
                 }).catch(err => console.error("Discord webhook error:", err));
             }
 
-            const liveTakeoverNotice = `Done! I've sent a direct message to Akhin's Discord server to alert him. If he's online, he can log into this session and continue chatting with you right here!\n\n✉️ You can also email him directly at: **${emailId}**.\n\n⚠️ *Please note: During working hours it will be difficult to respond immediately, but if you don't find any response in a minute, please contact via email.*`;
+            const liveTakeoverNotice = `Done! I've sent a direct message to Akhin. If he's online, he can log into this session and continue chatting with you right here!\n\n✉️ You can also email him directly at: **${emailId}**.\n\n⚠️ *Please note: During working hours it will be difficult to respond immediately, but if you don't find any response in a minute, please contact via email.*`;
 
             if (sessionId !== 'fallback-session') {
                 await supabase.from('chat_messages').insert([{ session_id: sessionId, sender: 'assistant', message: liveTakeoverNotice }]);
