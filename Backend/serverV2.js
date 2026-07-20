@@ -5,6 +5,9 @@ const jwt = require('jsonwebtoken');
 const { createClient } = require('@supabase/supabase-js');
 const Groq = require('groq-sdk');
 
+// ⚡ Import your admin routes module (ensure the filename matches your admin routes file, e.g., adminRoutes.js)
+const adminRoutes = require('./adminRoutes');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -16,6 +19,9 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANO
 
 // Initialize Groq AI SDK
 const groq = new Groq({ apiKey: process.env.GROK_API_KEY });
+
+// ⚡ Mount the admin router to resolve the 404 error on /api/admin/login
+app.use('/api/admin', adminRoutes(supabase));
 
 app.get('/api/config', (req, res) => {
     res.status(200).json({
@@ -137,7 +143,7 @@ app.post('/api/chat', async (req, res) => {
         
         cleanContextArray.unshift({
             role: "system",
-content: `You are Buddy, Akhin Murali's conversational Portfolio Assistant. Keep answers precise, short, and technical. 
+            content: `You are Buddy, Akhin Murali's conversational Portfolio Assistant. Keep answers precise, short, and technical. 
 
 Provide an excellent customer experience by asking the user's name and what they do naturally, without deviating from portfolio subjects or being intrusive. Let them know how you can help with their work. If you cannot help, let them know it was good to meet them and perhaps you can collaborate in the future.
 
