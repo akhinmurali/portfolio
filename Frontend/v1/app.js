@@ -27,8 +27,8 @@ const TEASER_PHRASES = [
 
 // --- 2. LOCAL FAQ INTERCEPTOR MATRIX (Updated with Notice Rule) ---
 const LOCAL_FAQ_REGISTRY = {
-    contact: "You can reach Akhin directly via email at your-email@domain.com. Note: during working hours it will be difficult to respond immediately, but if you don't find any response in a minute, please contact via email.",
-    email: "Akhin's professional email is your-email@domain.com. If you try to reach him live during working hours it may be difficult to get an instant reply; please drop an email if there is no response within a minute.",
+    contact: "You can reach Akhin directly via email at akhinmurali@gmail.com. Note: during working hours it will be difficult to respond immediately, but if you don't find any response in a minute, please contact via email.You can also type in the chat to talk to me so the agent can connect me if I'm available.",
+    email: "Akhin's professional email is akhinmurali@gmail.com. ",
     stack: "Akhin builds automation pipelines using JavaScript, Node.js, Express, Python, Google Gemini frameworks, and ServiceNow interfaces.",
     resume: "You can view Akhin's detailed roles and achievements by clicking the 'Explore My Work History' button right here on the main page.",
     projects: "His core builds include a Smart Digital Front Desk with live human takeover, an AI Resource Planner, and a PMO Automation Tool Suite.",
