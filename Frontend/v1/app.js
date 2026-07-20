@@ -32,8 +32,8 @@ const LOCAL_FAQ_REGISTRY = {
     stack: "Akhin builds automation pipelines using JavaScript, Node.js, Express, Python, Google Gemini frameworks, and ServiceNow interfaces.",
     resume: "You can view Akhin's detailed roles and achievements by clicking the 'Explore My Work History' button right here on the main page.",
     projects: "His core builds include a Smart Digital Front Desk with live human takeover, an AI Resource Planner, and a PMO Automation Tool Suite.",
-	Tools: "CrewAI,Langchain,Python,Powerautomate,PowerBi,ServiceNow,Salesforce,SAP,MS office,Google office",
-	Skills: "Agentic Ai,Dashboards and reports Automation,Stakeholder Management,Invoice Management,IT Procurement Support,Budget Management"
+	tools: "CrewAI,Langchain,Python,Powerautomate,PowerBi,ServiceNow,Salesforce,SAP,MS office,Google office",
+	skills: "Agentic Ai,Dashboards and reports Automation,Stakeholder Management,Invoice Management,IT Procurement Support,Budget Management",
     allianz: "At Allianz, Akhin worked as a PMO Analyst focusing on project tracking tools and automated reporting scripts."
 };
 
